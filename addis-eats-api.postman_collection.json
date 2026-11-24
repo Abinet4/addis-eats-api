@@ -20,6 +20,14 @@
     {
       "key": "restaurantSlug",
       "value": ""
+    },
+    {
+      "key": "orderId2",
+      "value": ""
+    },
+    {
+      "key": "payRef",
+      "value": ""
     }
   ],
   "item": [
@@ -1540,7 +1548,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"reference\": \"TB-100234\"\n}",
+              "raw": "{\n  \"reference\": \"{{payRef}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1549,6 +1557,15 @@
             }
           },
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"payRef\", \"TB-\" + Date.now());"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {
@@ -1589,7 +1606,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"reference\": \"TB-100234\"\n}",
+              "raw": "{\n  \"reference\": \"{{payRef}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1654,6 +1671,104 @@
                 "exec": [
                   "pm.test(\"status is 409\", () => pm.response.to.have.status(409));",
                   "pm.test(\"error code is already_paid\", () => pm.expect(pm.response.json().error.code).to.eql(\"already_paid\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Second order for the reuse check",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer_name\": \"Dawit\",\n  \"area\": \"Bole\",\n  \"lines\": [\n    {\n      \"dish_id\": 2,\n      \"qty\": 1\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 201\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"orderId2\", pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reuse a reference on another order -> 409",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders/{{orderId2}}/payment",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders",
+                "{{orderId2}}",
+                "payment"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reference\": \"{{payRef}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 409\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"error code is payment_reference_taken\", () => pm.expect(pm.response.json().error.code).to.eql(\"payment_reference_taken\"));"
                 ]
               }
             }

@@ -59,5 +59,5 @@ foreach ($orders as $title => $build) {
 $rules = ['standard' => new StandardRule($zones), 'promo' => new PromoRule(new StandardRule($zones)), 'free' => new FreeDeliveryRule($zones)];
 foreach ($rules as $name => $rule) {
     /** @var PricingRule $rule */
-    printf("%-8s fee for Bole on a 180.00 ETB order: %d santim%s", $name, $rule->feeFor('Bole', 18000), PHP_EOL);
+    printf('%-8s fee for Bole on a 180.00 ETB order: %d santim%s', $name, $rule->feeFor('Bole', 18000), PHP_EOL);
 }

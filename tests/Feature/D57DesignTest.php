@@ -105,3 +105,14 @@ it('marks paid idempotently with PUT', function () {
         ->assertStatus(409)->assertJsonPath('error.code', 'already_paid');
     $this->getJson('/api/v1/orders/abc')->assertNotFound();
 });
+
+it('refuses to reuse one payment reference for two orders (409, not 500)', function () {
+    $first = placeOrder($this);
+    $second = $this->postJson('/api/v1/orders', ['customer_name' => 'Dawit', 'area' => 'Bole',
+        'lines' => [['dish_id' => 2, 'qty' => 1]]])->json('data.id');
+
+    $this->putJson("/api/v1/orders/{$first}/payment", ['reference' => 'TB-555'])->assertOk();
+    $this->putJson("/api/v1/orders/{$second}/payment", ['reference' => 'TB-555'])
+        ->assertStatus(409)->assertJsonPath('error.code', 'payment_reference_taken');
+    expect(Order::find($second)->paid_at)->toBeNull();
+});

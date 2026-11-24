@@ -8,7 +8,7 @@ REST API for Addis Eats, a food-delivery service in Addis Ababa. CodeOps Module 
 | PHP | 8.3 (8.2 is the minimum for Laravel 11) |
 | Framework | Laravel 11.x |
 | Database | SQLite (file at `database/database.sqlite`) |
-| Tests | Pest 3 (67 tests) |
+| Tests | Pest 3 (68 tests) |
 
 Full day-by-day exercise write-up: [`docs/MODULE4_LARAVEL_D51-D57_SOLUTIONS.md`](docs/MODULE4_LARAVEL_D51-D57_SOLUTIONS.md).
 
@@ -25,7 +25,7 @@ php artisan serve            # http://127.0.0.1:8000
 
 The two commands you need day to day: `php artisan migrate:fresh --seed` and `php artisan serve`.
 
-Run the tests with `./vendor/bin/pest`. Seed 1,200 extra dishes to see pagination with `php artisan db:seed --class=LargeDishSeeder`.
+Run the tests with `./vendor/bin/pest`. To test by hand, import `addis-eats-api.postman_collection.json` into Postman (40 requests with assertions) or run `npx newman run addis-eats-api.postman_collection.json`. Seed 1,200 extra dishes to see pagination with `php artisan db:seed --class=LargeDishSeeder`.
 
 ## Endpoints
 

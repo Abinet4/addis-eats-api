@@ -2,7 +2,7 @@
 
 **Project:** `addis-eats-api` (the backend capstone)
 **Stack:** PHP 8.3, Laravel 11, SQLite, Pest 3
-**Status:** every in-class exercise and every homework or capstone slice for Days 52 to 57 is implemented in this repository and covered by an automated test suite (67 tests, 221 assertions, all passing).
+**Status:** every in-class exercise and every homework or capstone slice for Days 52 to 57 is implemented in this repository and covered by an automated test suite (68 tests, 225 assertions, all passing).
 
 ---
 
@@ -40,7 +40,7 @@ Run everything yourself:
 ```bash
 composer install && cp .env.example .env && php artisan key:generate
 touch database/database.sqlite && php artisan migrate --seed
-./vendor/bin/pest                       # 67 tests
+./vendor/bin/pest                       # 68 tests
 php homework/d52_menu_report.php        # Day 52 mini-project
 php homework/d53_order_engine.php       # Day 53 mini-project
 php artisan serve                       # then use requests.http
@@ -1199,7 +1199,7 @@ $orders = Order::query()
 |---|---|---|---|
 | Mark delivered | `PATCH /orders/{id}/status` `{"status": "delivered"}` | 200 + order | 409 illegal transition, 422 unknown status |
 | Cancel | `POST /orders/{id}/cancellation` `{"reason": "..."}` | 200 + order | 409 if already delivered or cancelled |
-| Mark paid | `PUT /orders/{id}/payment` `{"reference": "TB-..."}` | 200 + order | 409 if already paid with another reference |
+| Mark paid | `PUT /orders/{id}/payment` `{"reference": "TB-..."}` | 200 + order | 409 `already_paid` if paid with another reference, 409 `payment_reference_taken` if that reference already settled a different order |
 
 The transition rules live in the enum, so they exist in exactly one place:
 
@@ -1267,7 +1267,22 @@ When only a driver may make the transition, choose **option 2**: a dedicated sin
 
 - **The Day 57 filter table says `area` "must be a configured delivery zone".** Most APIs would just return an empty list for an unknown filter value. Here the list endpoint returns 422 `outside_delivery_zone`, because the contract says so and "documentation that is not enforced is fiction". Pick one and document it; the choice is in the README.
 - **`cursorPaginate()` needs a deterministic order.** Two orders created in the same second would otherwise be skipped or repeated. `orderByDesc('id')` is the tie-breaker, and a test pages through seven orders five at a time and checks no id appears twice.
+- **A unique column needs a domain check, not only an index.** Running the Postman collection twice exposed a 500: the second run paid a new order with the same TeleBirr reference, and the unique index on `payment_reference` threw. `OrderService::markPaid()` now checks first and also catches `UniqueConstraintViolationException` for the race between two simultaneous requests; both become a 409 `payment_reference_taken`.
 - **The paginator's `meta.links` array** contains HTML entities (`&laquo; Previous`). It is built for Blade pagination views. It is harmless, but a public API could strip it with a custom resource collection.
+
+---
+
+## Testing with Postman
+
+The repository includes `addis-eats-api.postman_collection.json`: 40 requests in five folders (Day 52 basics, Menu, Dishes, Restaurants, Orders) with 55 automatic assertions on status codes, error codes, the `Location` header, the hidden `cost_price` field and pagination links.
+
+1. Start the API: `php artisan migrate:fresh --seed` then `php artisan serve`.
+2. In Postman choose **Import**, then select the collection file.
+3. The collection variable `baseUrl` is `http://127.0.0.1:8000`. Change it if you serve on another port.
+4. Click a request and **Send**, or right-click the collection, choose **Run collection**, and run all 40 in order. Requests pass ids to each other through collection variables (`dishId`, `orderId`, `restaurantSlug`, `payRef`), so run them in order.
+5. Command line alternative, the same tool Day 69 uses: `npx newman run addis-eats-api.postman_collection.json`.
+
+Verified: three consecutive runs against the same database, 40 requests and 55 assertions, 0 failures.
 
 ---
 
@@ -1300,7 +1315,7 @@ Each item was confirmed by running code on Laravel 11.57.1 / PHP 8.3.6.
 **Test suite** (`./vendor/bin/pest`):
 
 ```text
-Tests:    67 passed (221 assertions)
+Tests:    68 passed (225 assertions)
 ```
 
 | Test file | Covers |
@@ -1311,6 +1326,8 @@ Tests:    67 passed (221 assertions)
 | `tests/Feature/D55DishesTest.php` | Filters, blank and zero filters, 404 variants, exact resource fields, 201 plus `Location`, mass-assignment protection, 422 instead of 500, PATCH versus PUT, 204 and soft delete, 405 |
 | `tests/Feature/D56RestaurantsTest.php` | Slug binding with hyphens, nested list sorting, whitelist fallback and injection attempt, case-insensitive search with literal `%`, `include`, query counts 2 and 3, nested create, restaurant CRUD |
 | `tests/Feature/D57DesignTest.php` | `per_page` sanitising, filters in links, page past the end, cursor paging with no repeats, order totals and merged lines, five bad-order cases, status transitions and 409, cancellation, idempotent payment |
+
+**Postman / Newman:** 40 requests, 55 assertions, 0 failures, three consecutive runs.
 
 **Route table** (`php artisan route:list --path=api`): 22 routes, listed in the README endpoint table.
 

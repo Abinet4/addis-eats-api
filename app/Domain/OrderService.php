@@ -8,9 +8,11 @@ use App\Domain\Pricing\PricingRule;
 use App\Exceptions\AlreadyPaidException;
 use App\Exceptions\EmptyOrderException;
 use App\Exceptions\IllegalStatusTransitionException;
+use App\Exceptions\PaymentReferenceTakenException;
 use App\Exceptions\UnknownDishException;
 use App\Models\Dish;
 use App\Models\Order;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -96,7 +98,18 @@ final class OrderService
             throw new IllegalStatusTransitionException($order->status, $order->status);
         }
 
-        $order->forceFill(['payment_reference' => $reference, 'paid_at' => now()])->save();
+        // A reference identifies one real payment, so it may settle only one order.
+        $taken = Order::query()->where('payment_reference', $reference)->whereKeyNot($order->getKey())->exists();
+        if ($taken) {
+            throw new PaymentReferenceTakenException($reference);
+        }
+
+        try {
+            $order->forceFill(['payment_reference' => $reference, 'paid_at' => now()])->save();
+        } catch (UniqueConstraintViolationException) {
+            // Two requests raced past the check above; the unique index is the real guard.
+            throw new PaymentReferenceTakenException($reference);
+        }
 
         return $order;
     }
