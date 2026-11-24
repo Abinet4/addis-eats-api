@@ -29,7 +29,7 @@ it('returns an empty data array for a page past the end', function () {
 it('pages through orders with a cursor and never repeats a row', function () {
     $this->seed();
     foreach (range(1, 7) as $i) {
-        $this->postJson('/api/v1/orders', ['customer_name' => "C{$i}", 'area' => 'Bole',
+        $this->postJson('/api/v1/orders', ['customer_name' => "C{$i}", 'phone' => '0911234567', 'area' => 'Bole',
             'lines' => [['dish_id' => 1, 'qty' => 1]]])->assertCreated();
     }
     $first = $this->getJson('/api/v1/orders?per_page=5')->assertOk();
@@ -60,13 +60,13 @@ it('places an order: 201, Location, exact totals, merged lines', function () {
 
 it('refuses bad orders with the right code', function (array $body, int $status, string $code) {
     $this->seed();
-    $this->postJson('/api/v1/orders', $body + ['customer_name' => 'Dawit'])
+    $this->postJson('/api/v1/orders', $body + ['customer_name' => 'Dawit', 'phone' => '0911234567'])
         ->assertStatus($status)->assertJsonPath('error.code', $code);
     expect(Order::count())->toBe(0);
 })->with([
-    'outside zone' => [['area' => 'Sululta', 'lines' => [['dish_id' => 1, 'qty' => 1]]], 422, 'outside_delivery_zone'],
-    'empty lines' => [['area' => 'Bole', 'lines' => []], 422, 'empty_order'],
-    'unknown dish' => [['area' => 'Bole', 'lines' => [['dish_id' => 9999, 'qty' => 1]]], 422, 'unknown_dish'],
+    'outside zone' => [['area' => 'Sululta', 'lines' => [['dish_id' => 1, 'qty' => 1]]], 422, 'validation_failed'],
+    'empty lines' => [['area' => 'Bole', 'lines' => []], 422, 'validation_failed'],
+    'unknown dish' => [['area' => 'Bole', 'lines' => [['dish_id' => 9999, 'qty' => 1]]], 422, 'validation_failed'],
     'qty zero' => [['area' => 'Bole', 'lines' => [['dish_id' => 1, 'qty' => 0]]], 422, 'validation_failed'],
     'qty as text' => [['area' => 'Bole', 'lines' => [['dish_id' => 1, 'qty' => 'two']]], 422, 'validation_failed'],
 ]);
@@ -75,14 +75,14 @@ function placeOrder($test): int
 {
     $test->seed();
 
-    return $test->postJson('/api/v1/orders', ['customer_name' => 'Almaz', 'area' => 'Bole',
+    return $test->postJson('/api/v1/orders', ['customer_name' => 'Almaz', 'phone' => '0911234567', 'area' => 'Bole',
         'lines' => [['dish_id' => 2, 'qty' => 1]]])->json('data.id');
 }
 
 it('moves status only along legal transitions (409 otherwise)', function () {
     $id = placeOrder($this);
     $this->patchJson("/api/v1/orders/{$id}/status", ['status' => 'delivered'])
-        ->assertStatus(409)->assertJsonPath('error.code', 'illegal_status_transition');
+        ->assertStatus(409)->assertJsonPath('error.code', 'illegal_transition');
     foreach (['preparing', 'on_the_way', 'delivered'] as $s) {
         $this->patchJson("/api/v1/orders/{$id}/status", ['status' => $s])->assertOk()->assertJsonPath('data.status', $s);
     }
@@ -110,7 +110,7 @@ it('marks paid idempotently with PUT', function () {
 
 it('refuses to reuse one payment reference for two orders (409, not 500)', function () {
     $first = placeOrder($this);
-    $second = $this->postJson('/api/v1/orders', ['customer_name' => 'Dawit', 'area' => 'Bole',
+    $second = $this->postJson('/api/v1/orders', ['customer_name' => 'Dawit', 'phone' => '0911234567', 'area' => 'Bole',
         'lines' => [['dish_id' => 2, 'qty' => 1]]])->json('data.id');
 
     $this->putJson("/api/v1/orders/{$first}/payment", ['reference' => 'TB-555'])->assertOk();

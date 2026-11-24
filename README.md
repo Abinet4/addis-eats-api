@@ -1,6 +1,6 @@
 # addis-eats-api
 
-REST API for Addis Eats, a food-delivery service in Addis Ababa. CodeOps Module 4 backend capstone, **Laravel (PHP) track**, Days 52 to 57.
+REST API for Addis Eats, a food-delivery service in Addis Ababa. CodeOps Module 4 backend capstone, **Laravel (PHP) track**, Days 52 to 58.
 
 | | |
 |---|---|
@@ -8,9 +8,9 @@ REST API for Addis Eats, a food-delivery service in Addis Ababa. CodeOps Module 
 | PHP | 8.3 (8.2 is the minimum for Laravel 11) |
 | Framework | Laravel 11.x |
 | Database | SQLite (file at `database/database.sqlite`) |
-| Tests | Pest 3 (70 tests) |
+| Tests | Pest 3 (167 tests) |
 
-Full day-by-day exercise write-up: [`docs/MODULE4_LARAVEL_D51-D57_SOLUTIONS.md`](docs/MODULE4_LARAVEL_D51-D57_SOLUTIONS.md).
+Full day-by-day exercise write-up: [`docs/MODULE4_LARAVEL_D51-D58_SOLUTIONS.md`](docs/MODULE4_LARAVEL_D51-D58_SOLUTIONS.md).
 
 ## Run it from a fresh clone
 
@@ -25,7 +25,7 @@ php artisan serve            # http://127.0.0.1:8000
 
 The two commands you need day to day: `php artisan migrate:fresh --seed` and `php artisan serve`.
 
-Run the tests with `./vendor/bin/pest`. To test by hand, import `addis-eats-api.postman_collection.json` into Postman (40 requests with assertions) or run `npx newman run addis-eats-api.postman_collection.json`. Seed 1,200 extra dishes to see pagination with `php artisan db:seed --class=LargeDishSeeder`.
+Run the tests with `./vendor/bin/pest`. To test by hand, import `addis-eats-api.postman_collection.json` into Postman (56 requests, 98 assertions) or run `npx newman run addis-eats-api.postman_collection.json`. Seed 1,200 extra dishes to see pagination with `php artisan db:seed --class=LargeDishSeeder`.
 
 ## Endpoints
 
@@ -51,7 +51,7 @@ All versioned routes live in `routes/api_v1.php` and are served under `/api/v1`.
 | GET | /api/v1/restaurants/{slug}/dishes | Dishes of one restaurant | 200 | 404 |
 | POST | /api/v1/restaurants/{slug}/dishes | Add a dish to a restaurant | 201 + Location | 404, 422 |
 | GET | /api/v1/orders | Order history (cursor pagination) | 200 | |
-| POST | /api/v1/orders | Place an order | 201 + Location | 422 |
+| POST | /api/v1/orders | Place an order (`customer_name`, `phone`, `area`, `lines`) | 201 + Location | 400, 409, 422 |
 | GET | /api/v1/orders/{order} | One order with lines | 200 | 404 |
 | PATCH | /api/v1/orders/{order}/status | Move along the status lifecycle | 200 | 409, 422 |
 | POST | /api/v1/orders/{order}/cancellation | Cancel with a reason | 200 | 409 |
@@ -79,7 +79,19 @@ Success: `{"data": ..., "meta": {...}}`. Paginated lists add `links` and `meta` 
 
 Failure, always: `{"error": {"code": "machine_code", "message": "Human text", "meta": {}}}`.
 
-Codes in use: `validation_failed`, `outside_delivery_zone`, `empty_order`, `unknown_dish`, `not_found`, `route_not_found`, `method_not_allowed`, `illegal_status_transition`, `already_paid`.
+The full code catalogue, with status, cause and what the client should do, is in [`ERRORS.md`](ERRORS.md). The handler lives in `bootstrap/app.php`; no controller has a `try`/`catch`.
+
+## Validation (Day 58)
+
+Every write endpoint takes a Form Request from `app/Http/Requests/V1` and reads only `$request->validated()`, so a field without a rule (`cost_price`, `is_admin`, a client-side `price` on an order line) never reaches a model.
+
+- Phones: `App\Rules\TeleBirrNumber` (`09` plus eight digits), applied after normalising `+251`, `251`, `00251`, spaces, dashes, brackets and dots. A number missing its leading `0` is rejected, never guessed.
+- Money: `App\Rules\Santim` accepts whole santim only, rejecting `true`, `685.5` and `685.0`, which Laravel's own `integer` rule lets through.
+- Orders: `area` must be a configured zone, at most 30 lines, `exists` on every `dish_id`, quantities 1 to 50, and every dish from the order's area.
+- 422 or 409: a request that could never succeed as written is a 422 from a rule; one that is well formed but clashes with current state (a withdrawn dish, an illegal status change, a reused payment reference) is a 409 from the service.
+- A body that claims to be JSON but cannot be parsed gets `400 malformed_json` instead of a misleading "field is required".
+
+Try the sixteen malformed requests in [`day58/bad_requests.http`](day58/bad_requests.http); the expected results are in [`day58/EXPECTED.md`](day58/EXPECTED.md) and the captured responses in [`day58/RESPONSES.md`](day58/RESPONSES.md). [`day58/phones.txt`](day58/phones.txt) holds forty phone numbers (twenty-six valid) that `tests/Feature/D58PhonesTest.php` checks one by one.
 
 ## Money
 

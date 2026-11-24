@@ -6,7 +6,7 @@ namespace App\Domain;
 
 use App\Domain\Pricing\PricingRule;
 use App\Exceptions\EmptyOrderException;
-use App\Exceptions\IllegalStatusTransitionException;
+use App\Exceptions\IllegalTransitionException;
 use App\Exceptions\OutsideZoneException;
 use App\Support\FormatsEtb;
 use Illuminate\Support\Collection;
@@ -68,7 +68,7 @@ final class Order
     public function moveTo(OrderStatus $next): void
     {
         if (! $this->status->canTransitionTo($next)) {
-            throw new IllegalStatusTransitionException($this->status, $next);
+            throw new IllegalTransitionException($this->status, $next);
         }
         $this->status = $next;
     }

@@ -77,7 +77,7 @@ it('runs restaurant CRUD', function () {
     $res = $this->postJson('/api/v1/restaurants', ['name' => 'Totot', 'area' => 'Megenagna', 'phone' => '0911223344'])
         ->assertCreated()->assertJsonPath('data.slug', 'totot');
     expect($res->headers->get('Location'))->toEndWith('/api/v1/restaurants/totot');
-    $this->patchJson('/api/v1/restaurants/totot', ['phone' => '0711223344'])->assertOk()->assertJsonPath('data.phone', '0711223344');
+    $this->patchJson('/api/v1/restaurants/totot', ['phone' => '+251 911 223 355'])->assertOk()->assertJsonPath('data.phone', '0911223355');
     $this->postJson('/api/v1/restaurants', ['name' => 'X', 'area' => 'Bole', 'phone' => '123'])->assertStatus(422);
     $this->deleteJson('/api/v1/restaurants/totot')->assertNoContent();
 });

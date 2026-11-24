@@ -83,14 +83,14 @@ POST http://127.0.0.1:8000/api/v1/orders
 Content-Type: application/json
 Accept: application/json
 
-{ "customer_name": "Almaz Bekele", "phone": "0911234567", "area": "Bole", "lines": [ { "dish_id": 3, "qty": 2 }, { "dish_id": 7, "qty": 1 } ] }
+{ "customer_name": "Almaz Bekele", "phone": "0911234567", "area": "Bole", "lines": [ { "dish_id": 3, "qty": 2 }, { "dish_id": 6, "qty": 1 } ] }
 
 ### Order outside the zone (422)
 POST http://127.0.0.1:8000/api/v1/orders
 Content-Type: application/json
 Accept: application/json
 
-{ "customer_name": "Dawit", "area": "Sululta", "lines": [ { "dish_id": 3, "qty": 1 } ] }
+{ "customer_name": "Dawit", "phone": "0911234567", "area": "Sululta", "lines": [ { "dish_id": 3, "qty": 1 } ] }
 
 ### Order history, cursor paged (200)
 GET http://127.0.0.1:8000/api/v1/orders?per_page=5

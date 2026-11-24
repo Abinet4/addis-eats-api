@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Domain\OrderService;
 use App\Http\Controllers\Api\V1\Concerns\ListsResources;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\V1\StoreOrderRequest;
 use App\Http\Resources\V1\OrderResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\Order;
@@ -36,20 +37,13 @@ class OrderController extends Controller
         return ApiResponse::paginated(OrderResource::collection($orders));
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreOrderRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'customer_name' => ['required', 'string', 'max:100'],
-            'phone' => ['nullable', 'string', 'regex:/^(\+2519|09|07)\d{8}$/'],
-            'area' => ['required', 'string'],          // zone checked by the PricingRule -> outside_delivery_zone
-            'lines' => ['present', 'array', 'max:50'], // an empty array reaches the domain -> empty_order
-            'lines.*.dish_id' => ['required', 'integer'],
-            'lines.*.qty' => ['required', 'integer', 'min:1', 'max:99'],
-        ]);
+        $data = $request->validated();
 
         $order = $this->orders->place(
             $data['customer_name'],
-            $data['phone'] ?? null,
+            $data['phone'],
             $data['area'],
             collect($data['lines']),
         );

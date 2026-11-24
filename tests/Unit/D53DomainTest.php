@@ -12,7 +12,7 @@ use App\Domain\Pricing\PromoRule;
 use App\Domain\Pricing\StandardRule;
 use App\Domain\Receipt;
 use App\Exceptions\EmptyOrderException;
-use App\Exceptions\IllegalStatusTransitionException;
+use App\Exceptions\IllegalTransitionException;
 use App\Exceptions\OutsideZoneException;
 use App\Support\Money;
 
@@ -88,7 +88,7 @@ it('refuses a quantity of zero', function () {
 
 it('refuses an illegal transition on the domain order', function () {
     (new Order(4, 'Bole', new StandardRule(zones())))->moveTo(OrderStatus::Delivered);
-})->throws(IllegalStatusTransitionException::class);
+})->throws(IllegalTransitionException::class);
 
 it('formats santim exactly, with no thousands separator', function (int $in, string $out) {
     expect(Money::decimal($in))->toBe($out);

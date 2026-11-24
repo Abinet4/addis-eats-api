@@ -8,13 +8,14 @@ use App\Domain\Pricing\DeliveryZones;
 use App\Exceptions\OutsideZoneException;
 use App\Http\Controllers\Api\V1\Concerns\ListsResources;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\V1\StoreDishRequest;
+use App\Http\Requests\V1\UpdateDishRequest;
 use App\Http\Resources\V1\DishResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\Dish;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Validation\Rule;
 
 class DishController extends Controller
 {
@@ -53,17 +54,17 @@ class DishController extends Controller
         return ApiResponse::ok(new DishResource($dish->load('restaurant')));
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreDishRequest $request): JsonResponse
     {
-        $dish = Dish::create($request->validate($this->rules(partial: false)));
+        $dish = Dish::create($request->validated());
 
         return ApiResponse::created(new DishResource($dish->load('restaurant')), route('v1.dishes.show', $dish));
     }
 
     /** PUT replaces (every field required), PATCH changes only what is sent. */
-    public function update(Request $request, Dish $dish): JsonResponse
+    public function update(UpdateDishRequest $request, Dish $dish): JsonResponse
     {
-        $dish->update($request->validate($this->rules(partial: $request->isMethod('patch'))));
+        $dish->update($request->validated());
 
         return ApiResponse::ok(new DishResource($dish->refresh()->load('restaurant')));
     }
@@ -73,19 +74,5 @@ class DishController extends Controller
         $dish->delete(); // soft delete: past orders can still name it
 
         return ApiResponse::noContent();
-    }
-
-    /** Minimal rules so bad input is a 422, never a 500. Day 58 moves these into Form Requests. */
-    private function rules(bool $partial): array
-    {
-        $req = $partial ? 'sometimes' : 'required';
-
-        return [
-            'name' => [$req, 'string', 'max:100'],
-            'price' => [$req, 'integer', 'min:1', 'max:100000000'],
-            'is_fasting' => [$req, 'boolean'],
-            'area' => [$req, Rule::in($this->zones->names())],
-            'restaurant_id' => [$req, 'integer', 'exists:restaurants,id'],
-        ];
     }
 }
