@@ -1,0 +1,25 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Resources\V1;
+
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+class RestaurantResource extends JsonResource
+{
+    public function toArray(Request $request): array
+    {
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'slug' => $this->slug,
+            'area' => $this->area,
+            'phone' => $this->phone,
+            'opening_hours' => $this->opening_hours,
+            'dish_count' => $this->whenCounted('dishes'),
+            'dishes' => DishResource::collection($this->whenLoaded('dishes')),
+        ];
+    }
+}

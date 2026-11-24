@@ -1,0 +1,125 @@
+### Health
+GET http://127.0.0.1:8000/api/health
+Accept: application/json
+
+### Menu inside a zone (200)
+GET http://127.0.0.1:8000/api/v1/menu?area=Bole&budget=25000
+Accept: application/json
+
+### Menu outside the zone (422 outside_delivery_zone)
+GET http://127.0.0.1:8000/api/v1/menu?area=Sululta
+Accept: application/json
+
+### Dishes: filtered, searched, sorted, paged (200)
+GET http://127.0.0.1:8000/api/v1/dishes?area=Bole&fasting=1&q=doro&sort=-price&per_page=5&page=1
+Accept: application/json
+
+### One dish (200)
+GET http://127.0.0.1:8000/api/v1/dishes/3
+Accept: application/json
+
+### Unknown dish (404 not_found)
+GET http://127.0.0.1:8000/api/v1/dishes/9999
+Accept: application/json
+
+### Non-numeric id never matches the route (404 route_not_found)
+GET http://127.0.0.1:8000/api/v1/dishes/abc
+Accept: application/json
+
+### Create a dish (201 + Location)
+POST http://127.0.0.1:8000/api/v1/dishes
+Content-Type: application/json
+Accept: application/json
+
+{ "name": "Kitfo", "restaurant": "Sishu", "price": 38000, "is_fasting": false, "area": "Kazanchis" }
+
+### Invalid dish (422 validation_failed)
+POST http://127.0.0.1:8000/api/v1/dishes
+Content-Type: application/json
+Accept: application/json
+
+{ "name": "Kitfo", "price": -5, "area": "Sululta" }
+
+### Change the price (200, cost_price ignored)
+PATCH http://127.0.0.1:8000/api/v1/dishes/3
+Content-Type: application/json
+Accept: application/json
+
+{ "price": 19500, "cost_price": 100 }
+
+### Delete (204, no body)
+DELETE http://127.0.0.1:8000/api/v1/dishes/41
+Accept: application/json
+
+### Wrong verb on the collection (405)
+DELETE http://127.0.0.1:8000/api/v1/dishes
+Accept: application/json
+
+### Restaurants with dish counts (200)
+GET http://127.0.0.1:8000/api/v1/restaurants?sort=-name
+Accept: application/json
+
+### One restaurant by slug, with its dishes (200)
+GET http://127.0.0.1:8000/api/v1/restaurants/yod-abyssinia?include=dishes
+Accept: application/json
+
+### Unknown slug (404)
+GET http://127.0.0.1:8000/api/v1/restaurants/no-such-place
+Accept: application/json
+
+### A restaurant's dishes, most expensive first (200)
+GET http://127.0.0.1:8000/api/v1/restaurants/yod-abyssinia/dishes?sort=-price
+Accept: application/json
+
+### Add a dish to a restaurant (201)
+POST http://127.0.0.1:8000/api/v1/restaurants/kategna/dishes
+Content-Type: application/json
+Accept: application/json
+
+{ "name": "Misir Wat", "price": 16500, "is_fasting": true }
+
+### Place an order (201 + Location)
+POST http://127.0.0.1:8000/api/v1/orders
+Content-Type: application/json
+Accept: application/json
+
+{ "customer_name": "Almaz Bekele", "phone": "0911234567", "area": "Bole", "lines": [ { "dish_id": 3, "qty": 2 }, { "dish_id": 7, "qty": 1 } ] }
+
+### Order outside the zone (422)
+POST http://127.0.0.1:8000/api/v1/orders
+Content-Type: application/json
+Accept: application/json
+
+{ "customer_name": "Dawit", "area": "Sululta", "lines": [ { "dish_id": 3, "qty": 1 } ] }
+
+### Order history, cursor paged (200)
+GET http://127.0.0.1:8000/api/v1/orders?per_page=5
+Accept: application/json
+
+### Illegal transition (409)
+PATCH http://127.0.0.1:8000/api/v1/orders/1/status
+Content-Type: application/json
+Accept: application/json
+
+{ "status": "delivered" }
+
+### Legal transition (200)
+PATCH http://127.0.0.1:8000/api/v1/orders/1/status
+Content-Type: application/json
+Accept: application/json
+
+{ "status": "preparing" }
+
+### Cancel (200, then 409 if repeated)
+POST http://127.0.0.1:8000/api/v1/orders/1/cancellation
+Content-Type: application/json
+Accept: application/json
+
+{ "reason": "customer_unreachable" }
+
+### Mark paid, safe to retry (200)
+PUT http://127.0.0.1:8000/api/v1/orders/2/payment
+Content-Type: application/json
+Accept: application/json
+
+{ "reference": "TB-100234" }
