@@ -31,7 +31,7 @@ POST http://127.0.0.1:8000/api/v1/dishes
 Content-Type: application/json
 Accept: application/json
 
-{ "name": "Kitfo", "restaurant": "Sishu", "price": 38000, "is_fasting": false, "area": "Kazanchis" }
+{ "name": "Kitfo", "restaurant_id": 3, "price": 38000, "is_fasting": false, "area": "Kazanchis" }
 
 ### Invalid dish (422 validation_failed)
 POST http://127.0.0.1:8000/api/v1/dishes

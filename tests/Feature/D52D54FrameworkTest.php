@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Domain\Pricing\PricingRule;
 use App\Domain\Pricing\PromoRule;
 use App\Domain\Pricing\StandardRule;

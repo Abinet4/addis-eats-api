@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Seeders;
 
 use App\Models\Dish;
@@ -19,7 +21,6 @@ class LargeDishSeeder extends Seeder
 
                 return $d->forceFill([
                     'restaurant_id' => $owner?->id,
-                    'restaurant' => $owner?->name ?? $d->restaurant,
                     'area' => $owner?->area ?? $d->area,
                     'created_at' => now(), 'updated_at' => now(),
                 ])->getAttributes();

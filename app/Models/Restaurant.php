@@ -33,6 +33,7 @@ class Restaurant extends Model
 
     public function dishes(): HasMany
     {
-        return $this->hasMany(Dish::class);
+        // chaperone() sets $dish->restaurant on every loaded dish without another query
+        return $this->hasMany(Dish::class)->chaperone();
     }
 }

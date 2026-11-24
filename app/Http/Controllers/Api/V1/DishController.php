@@ -35,6 +35,7 @@ class DishController extends Controller
         [$column, $direction] = $this->sort($request, self::SORTABLE, 'price');
 
         $dishes = Dish::query()
+            ->with('restaurant')                // one extra query, not one per dish
             ->inArea($area)
             ->under($request->filled('max_price') ? $request->integer('max_price') : null)
             ->fasting($request->boolean('fasting'))
@@ -49,14 +50,14 @@ class DishController extends Controller
 
     public function show(Dish $dish): JsonResponse
     {
-        return ApiResponse::ok(new DishResource($dish));
+        return ApiResponse::ok(new DishResource($dish->load('restaurant')));
     }
 
     public function store(Request $request): JsonResponse
     {
         $dish = Dish::create($request->validate($this->rules(partial: false)));
 
-        return ApiResponse::created(new DishResource($dish), route('v1.dishes.show', $dish));
+        return ApiResponse::created(new DishResource($dish->load('restaurant')), route('v1.dishes.show', $dish));
     }
 
     /** PUT replaces (every field required), PATCH changes only what is sent. */
@@ -64,7 +65,7 @@ class DishController extends Controller
     {
         $dish->update($request->validate($this->rules(partial: $request->isMethod('patch'))));
 
-        return ApiResponse::ok(new DishResource($dish->refresh()));
+        return ApiResponse::ok(new DishResource($dish->refresh()->load('restaurant')));
     }
 
     public function destroy(Dish $dish): Response
@@ -81,11 +82,10 @@ class DishController extends Controller
 
         return [
             'name' => [$req, 'string', 'max:100'],
-            'restaurant' => [$req, 'string', 'max:100'],
             'price' => [$req, 'integer', 'min:1', 'max:100000000'],
             'is_fasting' => [$req, 'boolean'],
             'area' => [$req, Rule::in($this->zones->names())],
-            'restaurant_id' => ['sometimes', 'nullable', 'integer', 'exists:restaurants,id'],
+            'restaurant_id' => [$req, 'integer', 'exists:restaurants,id'],
         ];
     }
 }

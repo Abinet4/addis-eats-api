@@ -46,11 +46,9 @@ class RestaurantDishController extends Controller
             'is_fasting' => ['required', 'boolean'],
         ]);
 
-        // Restaurant name and area come from the parent, not from the client.
-        $dish = $restaurant->dishes()->create($data + [
-            'restaurant' => $restaurant->name,
-            'area' => $restaurant->area,
-        ]);
+        // The restaurant and the area come from the parent, not from the client.
+        $dish = $restaurant->dishes()->create($data + ['area' => $restaurant->area]);
+        $dish->setRelation('restaurant', $restaurant);
 
         return ApiResponse::created(new DishResource($dish), route('v1.dishes.show', $dish));
     }

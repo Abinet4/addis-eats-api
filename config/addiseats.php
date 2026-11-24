@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 // Structure lives here and is committed. Values that differ per machine come
 // from .env, read ONLY in this file (env() returns null after config:cache).
 return [

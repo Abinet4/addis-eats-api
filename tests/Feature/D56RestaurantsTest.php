@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Models\Dish;
 use App\Models\Restaurant;
 use Illuminate\Support\Facades\DB;
@@ -8,8 +10,7 @@ beforeEach(function () {
     $this->yod = Restaurant::create(['name' => 'Yod Abyssinia', 'area' => 'Bole', 'phone' => '0911000001']);
     $this->kat = Restaurant::create(['name' => 'Kategna', 'area' => 'Kazanchis', 'phone' => '0911000002']);
     foreach ([['Doro Wat', 42000], ['Shiro', 18000], ['Doro Tibs', 30000]] as [$n, $p]) {
-        $this->yod->dishes()->create(['name' => $n, 'price' => $p, 'is_fasting' => false,
-            'restaurant' => 'Yod Abyssinia', 'area' => 'Bole']);
+        $this->yod->dishes()->create(['name' => $n, 'price' => $p, 'is_fasting' => false, 'area' => 'Bole']);
     }
 });
 
@@ -79,4 +80,21 @@ it('runs restaurant CRUD', function () {
     $this->patchJson('/api/v1/restaurants/totot', ['phone' => '0711223344'])->assertOk()->assertJsonPath('data.phone', '0711223344');
     $this->postJson('/api/v1/restaurants', ['name' => 'X', 'area' => 'Bole', 'phone' => '123'])->assertStatus(422);
     $this->deleteJson('/api/v1/restaurants/totot')->assertNoContent();
+});
+
+it('exposes both sides of the Restaurant and Dish relationship', function () {
+    $dish = $this->yod->dishes()->first();
+    expect($dish->restaurant->is($this->yod))->toBeTrue()
+        ->and($this->yod->dishes)->toHaveCount(3)
+        ->and($this->yod->dishes->first()->relationLoaded('restaurant'))->toBeTrue(); // chaperone
+    $this->getJson("/api/v1/dishes/{$dish->id}")->assertJsonPath('data.restaurant', 'Yod Abyssinia');
+});
+
+it('lists dishes with their restaurant in two queries, whatever the page size', function () {
+    Dish::factory()->count(30)->create();
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+    $this->getJson('/api/v1/dishes?per_page=50')->assertOk()->assertJsonCount(33, 'data');
+    // count(*) for the paginator, the dishes page, and one IN query for restaurants
+    expect(count(DB::getQueryLog()))->toBe(3);
 });

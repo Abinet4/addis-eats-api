@@ -374,7 +374,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Kitfo\",\n  \"restaurant\": \"Sishu\",\n  \"price\": 38000,\n  \"is_fasting\": false,\n  \"area\": \"Kazanchis\",\n  \"cost_price\": 1\n}",
+              "raw": "{\n  \"name\": \"Kitfo\",\n  \"restaurant_id\": 3,\n  \"price\": 38000,\n  \"is_fasting\": false,\n  \"area\": \"Kazanchis\",\n  \"cost_price\": 1\n}",
               "options": {
                 "raw": {
                   "language": "json"

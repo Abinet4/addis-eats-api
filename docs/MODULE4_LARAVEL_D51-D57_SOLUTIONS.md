@@ -2,7 +2,7 @@
 
 **Project:** `addis-eats-api` (the backend capstone)
 **Stack:** PHP 8.3, Laravel 11, SQLite, Pest 3
-**Status:** every in-class exercise and every homework or capstone slice for Days 52 to 57 is implemented in this repository and covered by an automated test suite (68 tests, 225 assertions, all passing).
+**Status:** every in-class exercise and every homework or capstone slice for Days 52 to 57 is implemented in this repository and covered by an automated test suite (70 tests, 233 assertions, all passing).
 
 ---
 
@@ -16,8 +16,10 @@
 6. [Day 55: Building the First API](#day-55-building-the-first-api)
 7. [Day 56: Routing and Controllers](#day-56-routing-and-controllers)
 8. [Day 57: REST API Design](#day-57-rest-api-design)
-9. [Where the slides are wrong or outdated](#where-the-slides-are-wrong-or-outdated)
-10. [Verification log](#verification-log)
+9. [How the work is graded](#how-the-work-is-graded)
+10. [Testing with Postman](#testing-with-postman)
+11. [Where the slides are wrong or outdated](#where-the-slides-are-wrong-or-outdated)
+12. [Verification log](#verification-log)
 
 ---
 
@@ -40,7 +42,7 @@ Run everything yourself:
 ```bash
 composer install && cp .env.example .env && php artisan key:generate
 touch database/database.sqlite && php artisan migrate --seed
-./vendor/bin/pest                       # 68 tests
+./vendor/bin/pest                       # 70 tests
 php homework/d52_menu_report.php        # Day 52 mini-project
 php homework/d53_order_engine.php       # Day 53 mini-project
 php artisan serve                       # then use requests.http
@@ -651,11 +653,22 @@ class Dish extends Model
 {
     use HasFactory, SoftDeletes;   // SoftDeletes arrives with Day 55's discussion
 
-    protected $fillable = ['name', 'restaurant', 'price', 'is_fasting', 'area', 'restaurant_id'];
+    // Final form after Day 56: the restaurant is a relationship, not a text column.
+    protected $fillable = ['name', 'price', 'is_fasting', 'area', 'restaurant_id'];
 
     protected function casts(): array
     {
         return ['is_fasting' => 'boolean', 'price' => 'integer', 'cost_price' => 'integer'];
+    }
+
+    public function restaurant(): BelongsTo
+    {
+        return $this->belongsTo(Restaurant::class);
+    }
+
+    public function orderLines(): HasMany
+    {
+        return $this->hasMany(OrderLine::class);
     }
 }
 ```
@@ -870,7 +883,7 @@ class DishResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
-            'restaurant' => $this->restaurant,
+            'restaurant' => $this->restaurant?->name,      // relationship, eager-loaded by the controller
             'price_etb' => Money::decimal($this->price),   // "1200.00", exact, no comma
             'price_santim' => $this->price,
             'fasting' => $this->is_fasting,
@@ -950,7 +963,7 @@ Migrations are forward only: `cost_price`, `restaurant_id` and `deleted_at` were
 ### Challenge
 
 - **Keep the data wrapper on single resources too.** `return new DishResource($dish)` is wrapped in `data`; a raw `return $dish` is not. Mixing both forces clients into conditionals, so everything goes through `ApiResponse`.
-- **The `restaurant` string column on dishes is now redundant** with `restaurant_id`. It is kept so the Day 55 contract (`"restaurant": "Kategna"`) does not break, but in Module 5 it should be dropped and the name read through the relationship.
+- **The Day 54 `restaurant` text column became redundant** once Day 56 added `restaurant_id`, and it blocked the natural relationship name `$dish->restaurant`. A forward migration (`2026_08_25_000001_replace_restaurant_name_with_relationship_on_dishes.php`) links every existing dish to a restaurant row, creating one if a name has no row, then drops the text column. Its `down()` restores the column and refills it. Both directions were run against legacy rows. The public contract did not change: `"restaurant": "Kategna"` is now read through the relationship. Creating a dish now takes `restaurant_id` instead of a free-text name, so a typo can no longer invent a restaurant.
 
 ---
 
@@ -1139,6 +1152,7 @@ Why the counts are 2 and 3: `withCount('dishes')` is a sub-select inside the mai
 
 - **`whereAlphaNumeric` on slugs breaks every multi-word restaurant.** The slide recommends it, but `yod-abyssinia` contains a hyphen, so the route never matches and returns 404. The pattern used is `[a-z0-9]+(?:-[a-z0-9]+)*`. A test proves `yod-abyssinia` works and `Yod_Abyssinia` is rejected.
 - **`apiResource('restaurants.dishes')->shallow()` next to `apiResource('dishes')` registers `/dishes/{dish}` twice**, under the same route names. Laravel keeps whichever is registered last, so a refactor that reorders the file silently changes which controller answers. Only `index` and `store` need the parent, so the nested resource is registered with `->only(['index', 'store'])`.
+- **N+1 is guarded automatically.** `Model::preventLazyLoading()` is on outside production, so any resource that touches a relation the controller did not eager-load fails a test instead of quietly running one query per row. `Restaurant::dishes()` uses `->chaperone()`, so each loaded dish already knows its restaurant without another query. A test confirms a 33-dish page with restaurant names costs 3 queries (count, page, one `IN` lookup).
 - **`include` should be split on commas**, not compared with `=== 'dishes'`. The convention table says includes are a comma list; `?include=dishes,reviews` would otherwise ignore `dishes`.
 - **`route:cache` and closures.** The slide says a closure route cannot be cached. That was true in old Laravel versions; on Laravel 11 `php artisan route:cache` succeeded with the closure routes in `routes/api.php` and they kept working. Keeping closures out of route files is still good style (they cannot be reused or unit tested), but it is no longer a hard rule.
 
@@ -1272,6 +1286,23 @@ When only a driver may make the transition, choose **option 2**: a dedicated sin
 
 ---
 
+## How the work is graded
+
+The evaluation sheet has eight columns. This is what each one checks, where it lives in this repository, and how to demonstrate it.
+
+| Column | What the evaluator looks for | Where it is | How to demonstrate |
+|---|---|---|---|
+| **Setup** | Runs from a fresh clone with only documented steps; `.env` not committed; `.env.example` present; README explains it | `README.md`, `.env.example`, `CHECKS.md` | Clone, then `composer install`, `cp .env.example .env`, `php artisan key:generate`, `touch database/database.sqlite`, `php artisan migrate --seed`, `php artisan serve`, open `/api/health` |
+| **Scalar Type Declarations** | `declare(strict_types=1)` first in every file; typed parameters and returns; nullable `?type`; `void`; money as integer santim; `===` | Every PHP file written for the project (app, routes, config, migrations, factories, seeders, tests); `app/Support/pricing.php`; `App\Support\Money` | `D52PricingTest` proves `deliveryFee('Bole', '7')` throws `TypeError`; explain why `0.1 + 0.2 !== 0.3` |
+| **Routing and Versioning** | `routes/api.php` (stateless, `/api`); `v1` prefix and names; constraints; `apiResource`; nested and single-action routes; `route:list` | `routes/api.php` loads `routes/api_v1.php` under `prefix('v1')->name('v1.')`; `Route::pattern()` in `AppServiceProvider` | `php artisan route:list --path=api` (22 routes); `/api/v1/dishes/abc` gives 404 |
+| **Model and Relationships** | Migrations moving forward only; `$fillable`; `casts()` including the enum; `hasMany` and `belongsTo` both ways; factories and seeders; eager loading | `Restaurant hasMany Dish`, `Dish belongsTo Restaurant`, `Dish hasMany OrderLine`, `Order hasMany OrderLine`, `OrderLine belongsTo Order` and `Dish`; `Order` casts `status` to `OrderStatus` | `?include=dishes` and the query-count tests (2, 3 and 3 queries); tinker: `Dish::first()->restaurant->name` |
+| **Controller** | Thin controllers in `Api\V1`; five-method resource controllers; `__invoke` for non-CRUD actions; constructor injection, never `new Service()` | Dish, Restaurant, RestaurantDish, Order controllers; OrderStatus, OrderCancellation, OrderPayment, Menu, Quote single-action controllers; rules in `OrderService` and `MenuService` | A test fails if any controller writes `new ...Service` or `new ...Rule` |
+| **RestAPI + Filtering** | Nouns not verbs; correct codes 200, 201 with `Location`, 204, 404, 405, 409, 422; filtering, search, sorting through a whitelist; pagination with a cap and filters kept in links | `ListsResources` trait (`perPage()`, `sort()`), Dish scopes `inArea`, `under`, `fasting`, `search`; `withQueryString()`; cursor pagination on orders | `/api/v1/dishes?area=Bole&sort=-price&per_page=2&page=2` and read `links.next`; `?per_page=1000000` returns 100 |
+| **Resources** | API Resource classes instead of raw models; internal fields hidden; `whenLoaded` and `whenCounted`; `data` wrapper; one success and error envelope | `app/Http/Resources/V1/*`; `ApiResponse`; error rendering in `bootstrap/app.php` | A test asserts the exact DishResource field list and that `cost_price` never appears |
+| **Request Handling** | Typed input (`integer()`, `boolean()`, `string()`, `filled()`, `enum()`, `collect()`); never `$request->all()` into `create()`; invalid input gives 422 not 500; one error shape | Every controller; `$request->validate()` on each write; `validation_failed`, `not_found`, `method_not_allowed` envelopes | Send `{"price": "two"}` or an order with `qty: 0` and get a 422 `validation_failed` |
+
+Two likely questions per column are already answered in the Review Questions of the matching day. The one gap an evaluator could raise is **Form Request classes** (`php artisan make:request`), which the course formally teaches on Day 58. The validation rules already exist in the controllers, so moving them into Form Requests is a short, mechanical change.
+
 ## Testing with Postman
 
 The repository includes `addis-eats-api.postman_collection.json`: 40 requests in five folders (Day 52 basics, Menu, Dishes, Restaurants, Orders) with 55 automatic assertions on status codes, error codes, the `Location` header, the hidden `cost_price` field and pagination links.
@@ -1315,7 +1346,7 @@ Each item was confirmed by running code on Laravel 11.57.1 / PHP 8.3.6.
 **Test suite** (`./vendor/bin/pest`):
 
 ```text
-Tests:    68 passed (225 assertions)
+Tests:    70 passed (233 assertions)
 ```
 
 | Test file | Covers |

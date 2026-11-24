@@ -35,6 +35,7 @@ final class MenuService
         }
 
         return DishModel::query()
+            ->with('restaurant')
             ->inArea($area)
             ->under($budget)          // filtered in SQL, not in PHP
             ->orderBy('price')
@@ -43,7 +44,7 @@ final class MenuService
             ->map(fn (DishModel $d) => [
                 'id' => $d->id,
                 'name' => $d->name,
-                'restaurant' => $d->restaurant,
+                'restaurant' => $d->restaurant?->name,
                 'price' => $this->toEtb($d->price),
                 'price_santim' => $d->price,
             ])

@@ -16,6 +16,11 @@ class OrderLine extends Model
         return ['unit_price' => 'integer', 'qty' => 'integer'];
     }
 
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class);
+    }
+
     public function dish(): BelongsTo
     {
         return $this->belongsTo(Dish::class)->withTrashed();

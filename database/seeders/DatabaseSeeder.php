@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Seeders;
 
 use App\Models\Dish;
@@ -34,7 +36,6 @@ class DatabaseSeeder extends Seeder
             $owner = $owners[$i % 3];
             Dish::factory()->create([
                 'restaurant_id' => $owner->id,
-                'restaurant' => $owner->name,
                 'area' => $owner->area,
             ]);
         }

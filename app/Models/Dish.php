@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Dish extends Model
@@ -16,7 +17,7 @@ class Dish extends Model
 
     /** What a client may mass-assign. cost_price is deliberately absent. */
     protected $fillable = [
-        'name', 'restaurant', 'price', 'is_fasting', 'area', 'restaurant_id',
+        'name', 'price', 'is_fasting', 'area', 'restaurant_id',
     ];
 
     protected function casts(): array
@@ -28,10 +29,14 @@ class Dish extends Model
         ];
     }
 
-    public function owner(): BelongsTo
+    public function restaurant(): BelongsTo
     {
-        // Named owner() because the legacy string column is called "restaurant".
-        return $this->belongsTo(Restaurant::class, 'restaurant_id');
+        return $this->belongsTo(Restaurant::class);
+    }
+
+    public function orderLines(): HasMany
+    {
+        return $this->hasMany(OrderLine::class);
     }
 
     // ---- Query scopes (Day 56). Each is a no-op when its argument is empty. ----

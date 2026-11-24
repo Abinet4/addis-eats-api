@@ -16,7 +16,7 @@ class DishResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
-            'restaurant' => $this->restaurant,
+            'restaurant' => $this->restaurant?->name,   // relationship, eager-loaded by the controller
             'price_etb' => Money::decimal($this->price),
             'price_santim' => $this->price,
             'fasting' => $this->is_fasting,

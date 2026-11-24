@@ -1,6 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Models\Dish;
+use App\Models\Restaurant;
 
 it('lists dishes with composable filters applied in SQL', function () {
     Dish::factory()->create(['name' => 'A', 'area' => 'Bole', 'price' => 20000, 'is_fasting' => true]);
@@ -37,12 +40,13 @@ it('publishes exactly the chosen fields and never cost_price', function () {
 
 it('creates with 201 and a Location header, ignoring unlisted fields', function () {
     $res = $this->postJson('/api/v1/dishes', [
-        'name' => 'Kitfo', 'restaurant' => 'Sishu', 'price' => 38000,
+        'name' => 'Kitfo', 'restaurant_id' => Restaurant::factory()->create(['name' => 'Sishu'])->id, 'price' => 38000,
         'is_fasting' => false, 'area' => 'Kazanchis', 'cost_price' => 1, 'id' => 777,
     ])->assertCreated();
 
     $id = $res->json('data.id');
     expect($id)->not->toBe(777)
+        ->and($res->json('data.restaurant'))->toBe('Sishu')
         ->and($res->headers->get('Location'))->toEndWith("/api/v1/dishes/{$id}")
         ->and(Dish::find($id)->cost_price)->toBeNull();
 });
@@ -51,7 +55,7 @@ it('rejects bad input with 422, never 500', function () {
     $this->postJson('/api/v1/dishes', ['name' => 'X', 'price' => -5, 'area' => 'Sululta'])
         ->assertStatus(422)
         ->assertJsonPath('error.code', 'validation_failed')
-        ->assertJsonStructure(['error' => ['meta' => ['fields' => ['price', 'area', 'restaurant', 'is_fasting']]]]);
+        ->assertJsonStructure(['error' => ['meta' => ['fields' => ['price', 'area', 'restaurant_id', 'is_fasting']]]]);
     $this->postJson('/api/v1/dishes', ['price' => 'two'])->assertStatus(422);
 });
 

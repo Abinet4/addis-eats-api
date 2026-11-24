@@ -8,7 +8,7 @@ REST API for Addis Eats, a food-delivery service in Addis Ababa. CodeOps Module 
 | PHP | 8.3 (8.2 is the minimum for Laravel 11) |
 | Framework | Laravel 11.x |
 | Database | SQLite (file at `database/database.sqlite`) |
-| Tests | Pest 3 (68 tests) |
+| Tests | Pest 3 (70 tests) |
 
 Full day-by-day exercise write-up: [`docs/MODULE4_LARAVEL_D51-D57_SOLUTIONS.md`](docs/MODULE4_LARAVEL_D51-D57_SOLUTIONS.md).
 

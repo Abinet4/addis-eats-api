@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Providers;
 
 use App\Domain\Pricing\DeliveryZones;
@@ -7,6 +9,7 @@ use App\Domain\Pricing\FreeDeliveryRule;
 use App\Domain\Pricing\PricingRule;
 use App\Domain\Pricing\PromoRule;
 use App\Domain\Pricing\StandardRule;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
@@ -31,6 +34,10 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Outside production, touching a relation that was not eager-loaded throws,
+        // so an N+1 query fails a test instead of slowing production down.
+        Model::preventLazyLoading(! $this->app->isProduction());
+
         // Global route constraints: a bad id never reaches the binder (clean 404).
         Route::pattern('dish', '[0-9]+');
         Route::pattern('order', '[0-9]+');
