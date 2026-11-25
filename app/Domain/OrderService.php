@@ -6,8 +6,9 @@ namespace App\Domain;
 
 use App\Domain\Pricing\PricingRule;
 use App\Exceptions\AlreadyPaidException;
+use App\Exceptions\DishWithdrawnException;
 use App\Exceptions\EmptyOrderException;
-use App\Exceptions\IllegalStatusTransitionException;
+use App\Exceptions\IllegalTransitionException;
 use App\Exceptions\PaymentReferenceTakenException;
 use App\Exceptions\UnknownDishException;
 use App\Models\Dish;
@@ -33,10 +34,18 @@ final class OrderService
         // Merge duplicate dish lines: [{3,1},{3,2}] becomes one line of qty 3.
         $qtyByDish = $lines->groupBy('dish_id')->map(fn (Collection $g) => (int) $g->sum('qty'));
 
-        $dishes = Dish::query()->whereIn('id', $qtyByDish->keys())->get()->keyBy('id');
+        $dishes = Dish::withTrashed()->whereIn('id', $qtyByDish->keys())->get()->keyBy('id');
+
+        // Safety net: the Form Request already turns unknown ids into a 422.
         $missing = $qtyByDish->keys()->diff($dishes->keys())->values();
         if ($missing->isNotEmpty()) {
             throw new UnknownDishException($missing->all());
+        }
+
+        // The world changed, not the payload: 409, so the client refreshes its menu.
+        $withdrawn = $dishes->filter(fn (Dish $d) => $d->trashed())->keys()->values();
+        if ($withdrawn->isNotEmpty()) {
+            throw new DishWithdrawnException($withdrawn->all());
         }
 
         $subtotal = $qtyByDish->reduce(fn (int $sum, int $qty, int $id) => $sum + $dishes[$id]->price * $qty, 0);
@@ -67,7 +76,7 @@ final class OrderService
     public function transition(Order $order, OrderStatus $next): Order
     {
         if (! $order->status->canTransitionTo($next)) {
-            throw new IllegalStatusTransitionException($order->status, $next);
+            throw new IllegalTransitionException($order->status, $next);
         }
         $order->forceFill(['status' => $next])->save();
 
@@ -95,7 +104,7 @@ final class OrderService
             throw new AlreadyPaidException($order->payment_reference);
         }
         if ($order->status === OrderStatus::Cancelled) {
-            throw new IllegalStatusTransitionException($order->status, $order->status);
+            throw new IllegalTransitionException($order->status, $order->status);
         }
 
         // A reference identifies one real payment, so it may settle only one order.

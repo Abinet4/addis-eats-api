@@ -1,6 +1,6 @@
 {
   "info": {
-    "name": "Addis Eats API (Module 4, D51-D57)",
+    "name": "Addis Eats API (Module 4, D51-D58)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "description": "Run in order with the Collection Runner. Start the API with: php artisan migrate:fresh --seed && php artisan serve"
   },
@@ -192,10 +192,6 @@
               {
                 "key": "Accept",
                 "value": "application/json"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
               }
             ],
             "url": {
@@ -214,15 +210,6 @@
                   "value": "Sululta"
                 }
               ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "\"pm.test(\\\"error code is outside_delivery_zone\\\", () => pm.expect(pm.response.json().error.code).to.eql(\\\"outside_delivery_zone\\\"));\"",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
             }
           },
           "event": [
@@ -231,7 +218,8 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"status is 422\", () => pm.response.to.have.status(422));"
+                  "pm.test(\"status is 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"error code is outside_delivery_zone\", () => pm.expect(pm.response.json().error.code).to.eql(\"outside_delivery_zone\"));"
                 ]
               }
             }
@@ -249,10 +237,6 @@
             "header": [
               {
                 "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Content-Type",
                 "value": "application/json"
               }
             ],
@@ -284,15 +268,6 @@
                   "value": "1"
                 }
               ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "\"pm.test(\\\"has data, links, meta\\\", () => { const j = pm.response.json(); pm.expect(j).to.have.keys(\\\"data\\\",\\\"links\\\",\\\"meta\\\"); });\\npm.test(\\\"next link keeps filters\\\", () => { const n = pm.response.json().links.next; if (n) pm.expect(n).to.include(\\\"area=Bole\\\"); });\"",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
             }
           },
           "event": [
@@ -301,7 +276,9 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));"
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"has data, links, meta\", () => { const j = pm.response.json(); pm.expect(j).to.have.keys(\"data\",\"links\",\"meta\"); });",
+                  "pm.test(\"next link keeps filters\", () => { const n = pm.response.json().links.next; if (n) pm.expect(n).to.include(\"area=Bole\"); });"
                 ]
               }
             }
@@ -586,10 +563,6 @@
               {
                 "key": "Accept",
                 "value": "application/json"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
               }
             ],
             "url": {
@@ -603,15 +576,6 @@
                 "dishes",
                 "{{dishId}}"
               ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "\"pm.test(\\\"empty body\\\", () => pm.expect(pm.response.text()).to.eql(\\\"\\\"));\"",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
             }
           },
           "event": [
@@ -620,7 +584,8 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"status is 204\", () => pm.response.to.have.status(204));"
+                  "pm.test(\"status is 204\", () => pm.response.to.have.status(204));",
+                  "pm.test(\"empty body\", () => pm.expect(pm.response.text()).to.eql(\"\"));"
                 ]
               }
             }
@@ -634,10 +599,6 @@
               {
                 "key": "Accept",
                 "value": "application/json"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
               }
             ],
             "url": {
@@ -651,15 +612,6 @@
                 "dishes",
                 "{{dishId}}"
               ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "\"pm.test(\\\"error code is not_found\\\", () => pm.expect(pm.response.json().error.code).to.eql(\\\"not_found\\\"));\"",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
             }
           },
           "event": [
@@ -668,7 +620,8 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"status is 404\", () => pm.response.to.have.status(404));"
+                  "pm.test(\"status is 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"error code is not_found\", () => pm.expect(pm.response.json().error.code).to.eql(\"not_found\"));"
                 ]
               }
             }
@@ -681,10 +634,6 @@
             "header": [
               {
                 "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Content-Type",
                 "value": "application/json"
               }
             ],
@@ -699,15 +648,6 @@
                 "dishes",
                 "9999"
               ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "\"pm.test(\\\"error code is not_found\\\", () => pm.expect(pm.response.json().error.code).to.eql(\\\"not_found\\\"));\"",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
             }
           },
           "event": [
@@ -716,7 +656,8 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"status is 404\", () => pm.response.to.have.status(404));"
+                  "pm.test(\"status is 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"error code is not_found\", () => pm.expect(pm.response.json().error.code).to.eql(\"not_found\"));"
                 ]
               }
             }
@@ -729,10 +670,6 @@
             "header": [
               {
                 "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Content-Type",
                 "value": "application/json"
               }
             ],
@@ -747,15 +684,6 @@
                 "dishes",
                 "abc"
               ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "\"pm.test(\\\"error code is route_not_found\\\", () => pm.expect(pm.response.json().error.code).to.eql(\\\"route_not_found\\\"));\"",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
             }
           },
           "event": [
@@ -764,7 +692,8 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"status is 404\", () => pm.response.to.have.status(404));"
+                  "pm.test(\"status is 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"error code is route_not_found\", () => pm.expect(pm.response.json().error.code).to.eql(\"route_not_found\"));"
                 ]
               }
             }
@@ -778,10 +707,6 @@
               {
                 "key": "Accept",
                 "value": "application/json"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
               }
             ],
             "url": {
@@ -794,15 +719,6 @@
                 "v1",
                 "dishes"
               ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "\"pm.test(\\\"error code is method_not_allowed\\\", () => pm.expect(pm.response.json().error.code).to.eql(\\\"method_not_allowed\\\"));\"",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
             }
           },
           "event": [
@@ -811,7 +727,8 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"status is 405\", () => pm.response.to.have.status(405));"
+                  "pm.test(\"status is 405\", () => pm.response.to.have.status(405));",
+                  "pm.test(\"error code is method_not_allowed\", () => pm.expect(pm.response.json().error.code).to.eql(\"method_not_allowed\"));"
                 ]
               }
             }
@@ -870,10 +787,6 @@
               {
                 "key": "Accept",
                 "value": "application/json"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
               }
             ],
             "url": {
@@ -893,15 +806,6 @@
                   "value": "dishes"
                 }
               ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "\"pm.test(\\\"dishes included\\\", () => pm.expect(pm.response.json().data.dishes).to.be.an(\\\"array\\\"));\"",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
             }
           },
           "event": [
@@ -910,7 +814,8 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));"
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"dishes included\", () => pm.expect(pm.response.json().data.dishes).to.be.an(\"array\"));"
                 ]
               }
             }
@@ -923,10 +828,6 @@
             "header": [
               {
                 "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Content-Type",
                 "value": "application/json"
               }
             ],
@@ -941,15 +842,6 @@
                 "restaurants",
                 "no-such-place"
               ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "\"pm.test(\\\"error code is not_found\\\", () => pm.expect(pm.response.json().error.code).to.eql(\\\"not_found\\\"));\"",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
             }
           },
           "event": [
@@ -958,7 +850,8 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"status is 404\", () => pm.response.to.have.status(404));"
+                  "pm.test(\"status is 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"error code is not_found\", () => pm.expect(pm.response.json().error.code).to.eql(\"not_found\"));"
                 ]
               }
             }
@@ -1131,7 +1024,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"phone\": \"0711223344\"\n}",
+              "raw": "{\n  \"phone\": \"+251 911 223 344\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1218,7 +1111,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"customer_name\": \"Almaz Bekele\",\n  \"phone\": \"0911234567\",\n  \"area\": \"Bole\",\n  \"lines\": [\n    {\n      \"dish_id\": 3,\n      \"qty\": 2\n    },\n    {\n      \"dish_id\": 7,\n      \"qty\": 1\n    }\n  ]\n}",
+              "raw": "{\n  \"customer_name\": \"Almaz Bekele\",\n  \"phone\": \"0911234567\",\n  \"area\": \"Bole\",\n  \"lines\": [\n    {\n      \"dish_id\": 3,\n      \"qty\": 2\n    },\n    {\n      \"dish_id\": 6,\n      \"qty\": 1\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1303,7 +1196,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"customer_name\": \"Dawit\",\n  \"area\": \"Sululta\",\n  \"lines\": [\n    {\n      \"dish_id\": 3,\n      \"qty\": 1\n    }\n  ]\n}",
+              "raw": "{\n  \"customer_name\": \"Dawit\",\n  \"phone\": \"0911234567\",\n  \"area\": \"Sululta\",\n  \"lines\": [\n    {\n      \"dish_id\": 3,\n      \"qty\": 1\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1318,7 +1211,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"status is 422\", () => pm.response.to.have.status(422));",
-                  "pm.test(\"error code is outside_delivery_zone\", () => pm.expect(pm.response.json().error.code).to.eql(\"outside_delivery_zone\"));"
+                  "pm.test(\"error code is validation_failed\", () => pm.expect(pm.response.json().error.code).to.eql(\"validation_failed\"));"
                 ]
               }
             }
@@ -1351,7 +1244,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"customer_name\": \"Dawit\",\n  \"area\": \"Bole\",\n  \"lines\": []\n}",
+              "raw": "{\n  \"customer_name\": \"Dawit\",\n  \"phone\": \"0911234567\",\n  \"area\": \"Bole\",\n  \"lines\": []\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1366,7 +1259,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"status is 422\", () => pm.response.to.have.status(422));",
-                  "pm.test(\"error code is empty_order\", () => pm.expect(pm.response.json().error.code).to.eql(\"empty_order\"));"
+                  "pm.test(\"error code is validation_failed\", () => pm.expect(pm.response.json().error.code).to.eql(\"validation_failed\"));"
                 ]
               }
             }
@@ -1399,7 +1292,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"customer_name\": \"Dawit\",\n  \"area\": \"Bole\",\n  \"lines\": [\n    {\n      \"dish_id\": 99999,\n      \"qty\": 1\n    }\n  ]\n}",
+              "raw": "{\n  \"customer_name\": \"Dawit\",\n  \"phone\": \"0911234567\",\n  \"area\": \"Bole\",\n  \"lines\": [\n    {\n      \"dish_id\": 99999,\n      \"qty\": 1\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1414,7 +1307,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"status is 422\", () => pm.response.to.have.status(422));",
-                  "pm.test(\"error code is unknown_dish\", () => pm.expect(pm.response.json().error.code).to.eql(\"unknown_dish\"));"
+                  "pm.test(\"error code is validation_failed\", () => pm.expect(pm.response.json().error.code).to.eql(\"validation_failed\"));"
                 ]
               }
             }
@@ -1464,7 +1357,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"status is 409\", () => pm.response.to.have.status(409));",
-                  "pm.test(\"error code is illegal_status_transition\", () => pm.expect(pm.response.json().error.code).to.eql(\"illegal_status_transition\"));"
+                  "pm.test(\"error code is illegal_transition\", () => pm.expect(pm.response.json().error.code).to.eql(\"illegal_transition\"));"
                 ]
               }
             }
@@ -1703,7 +1596,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"customer_name\": \"Dawit\",\n  \"area\": \"Bole\",\n  \"lines\": [\n    {\n      \"dish_id\": 2,\n      \"qty\": 1\n    }\n  ]\n}",
+              "raw": "{\n  \"customer_name\": \"Dawit\",\n  \"phone\": \"0911234567\",\n  \"area\": \"Bole\",\n  \"lines\": [\n    {\n      \"dish_id\": 2,\n      \"qty\": 1\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1907,6 +1800,781 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"status is 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6. Bad requests (Day 58)",
+      "item": [
+        {
+          "name": "01 Empty dish body",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/dishes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dishes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"error code is validation_failed\", () => pm.expect(pm.response.json().error.code).to.eql(\"validation_failed\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 Negative price",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/dishes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dishes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"X\",\n  \"restaurant_id\": 1,\n  \"price\": -500,\n  \"area\": \"Bole\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"error code is validation_failed\", () => pm.expect(pm.response.json().error.code).to.eql(\"validation_failed\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 Price as decimal ETB",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/dishes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dishes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"X\",\n  \"restaurant_id\": 1,\n  \"price\": 685.5,\n  \"area\": \"Bole\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"error code is validation_failed\", () => pm.expect(pm.response.json().error.code).to.eql(\"validation_failed\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 Price as boolean",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/dishes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dishes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"X\",\n  \"restaurant_id\": 1,\n  \"price\": true,\n  \"area\": \"Bole\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"error code is validation_failed\", () => pm.expect(pm.response.json().error.code).to.eql(\"validation_failed\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 Unknown restaurant",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/dishes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dishes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"X\",\n  \"restaurant_id\": 999,\n  \"price\": 100,\n  \"area\": \"Bole\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"error code is validation_failed\", () => pm.expect(pm.response.json().error.code).to.eql(\"validation_failed\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "06 Unserved area",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer_name\": \"Almaz\",\n  \"phone\": \"0911234567\",\n  \"area\": \"Sululta\",\n  \"lines\": [\n    {\n      \"dish_id\": 3,\n      \"qty\": 1\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"error code is validation_failed\", () => pm.expect(pm.response.json().error.code).to.eql(\"validation_failed\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "07 Short phone",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer_name\": \"Almaz\",\n  \"phone\": \"12345\",\n  \"area\": \"Bole\",\n  \"lines\": [\n    {\n      \"dish_id\": 3,\n      \"qty\": 1\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"error code is validation_failed\", () => pm.expect(pm.response.json().error.code).to.eql(\"validation_failed\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "08 No lines",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer_name\": \"Almaz\",\n  \"phone\": \"0911234567\",\n  \"area\": \"Bole\",\n  \"lines\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"error code is validation_failed\", () => pm.expect(pm.response.json().error.code).to.eql(\"validation_failed\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "09 Too many lines (31)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer_name\": \"Almaz\",\n  \"phone\": \"0911234567\",\n  \"area\": \"Bole\",\n  \"lines\": [\n    {\n      \"dish_id\": 3,\n      \"qty\": 1\n    },\n    {\n      \"dish_id\": 3,\n      \"qty\": 1\n    },\n    {\n      \"dish_id\": 3,\n      \"qty\": 1\n    },\n    {\n      \"dish_id\": 3,\n      \"qty\": 1\n    },\n    {\n      \"dish_id\": 3,\n      \"qty\": 1\n    },\n    {\n      \"dish_id\": 3,\n      \"qty\": 1\n    },\n    {\n      \"dish_id\": 3,\n      \"qty\": 1\n    },\n    {\n      \"dish_id\": 3,\n      \"qty\": 1\n    },\n    {\n      \"dish_id\": 3,\n      \"qty\": 1\n    },\n    {\n      \"dish_id\": 3,\n      \"qty\": 1\n    },\n    {\n      \"dish_id\": 3,\n      \"qty\": 1\n    },\n    {\n      \"dish_id\": 3,\n      \"qty\": 1\n    },\n    {\n      \"dish_id\": 3,\n      \"qty\": 1\n    },\n    {\n      \"dish_id\": 3,\n      \"qty\": 1\n    },\n    {\n      \"dish_id\": 3,\n      \"qty\": 1\n    },\n    {\n      \"dish_id\": 3,\n      \"qty\": 1\n    },\n    {\n      \"dish_id\": 3,\n      \"qty\": 1\n    },\n    {\n      \"dish_id\": 3,\n      \"qty\": 1\n    },\n    {\n      \"dish_id\": 3,\n      \"qty\": 1\n    },\n    {\n      \"dish_id\": 3,\n      \"qty\": 1\n    },\n    {\n      \"dish_id\": 3,\n      \"qty\": 1\n    },\n    {\n      \"dish_id\": 3,\n      \"qty\": 1\n    },\n    {\n      \"dish_id\": 3,\n      \"qty\": 1\n    },\n    {\n      \"dish_id\": 3,\n      \"qty\": 1\n    },\n    {\n      \"dish_id\": 3,\n      \"qty\": 1\n    },\n    {\n      \"dish_id\": 3,\n      \"qty\": 1\n    },\n    {\n      \"dish_id\": 3,\n      \"qty\": 1\n    },\n    {\n      \"dish_id\": 3,\n      \"qty\": 1\n    },\n    {\n      \"dish_id\": 3,\n      \"qty\": 1\n    },\n    {\n      \"dish_id\": 3,\n      \"qty\": 1\n    },\n    {\n      \"dish_id\": 3,\n      \"qty\": 1\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"error code is validation_failed\", () => pm.expect(pm.response.json().error.code).to.eql(\"validation_failed\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10 Quantity out of range on line 1",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer_name\": \"Almaz\",\n  \"phone\": \"0911234567\",\n  \"area\": \"Bole\",\n  \"lines\": [\n    {\n      \"dish_id\": 3,\n      \"qty\": 1\n    },\n    {\n      \"dish_id\": 6,\n      \"qty\": 51\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"error code is validation_failed\", () => pm.expect(pm.response.json().error.code).to.eql(\"validation_failed\"));",
+                  "pm.test(\"names lines.1.qty\", () => pm.expect(pm.response.json().error.meta).to.have.property(\"lines.1.qty\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "11 Dish that never existed",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer_name\": \"Almaz\",\n  \"phone\": \"0911234567\",\n  \"area\": \"Bole\",\n  \"lines\": [\n    {\n      \"dish_id\": 99999,\n      \"qty\": 1\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"error code is validation_failed\", () => pm.expect(pm.response.json().error.code).to.eql(\"validation_failed\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "12 Dishes from two areas",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer_name\": \"Almaz\",\n  \"phone\": \"0911234567\",\n  \"area\": \"Bole\",\n  \"lines\": [\n    {\n      \"dish_id\": 3,\n      \"qty\": 1\n    },\n    {\n      \"dish_id\": 2,\n      \"qty\": 1\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"error code is validation_failed\", () => pm.expect(pm.response.json().error.code).to.eql(\"validation_failed\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "13 Client tries to set the price",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer_name\": \"Almaz\",\n  \"phone\": \"0911234567\",\n  \"area\": \"Bole\",\n  \"lines\": [\n    {\n      \"dish_id\": 3,\n      \"qty\": 1,\n      \"price\": 1\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"error code is validation_failed\", () => pm.expect(pm.response.json().error.code).to.eql(\"validation_failed\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "14 Truncated JSON body",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"customer_name\": \"Almaz\", \"lines\": [",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"error code is malformed_json\", () => pm.expect(pm.response.json().error.code).to.eql(\"malformed_json\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "15 PATCH price as text",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/dishes/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dishes",
+                "1"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": \"two hundred\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"error code is validation_failed\", () => pm.expect(pm.response.json().error.code).to.eql(\"validation_failed\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "16 Restaurant with a landline phone",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/restaurants",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "restaurants"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Totot\",\n  \"area\": \"Megenagna\",\n  \"phone\": \"0111234567\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"error code is validation_failed\", () => pm.expect(pm.response.json().error.code).to.eql(\"validation_failed\"));"
                 ]
               }
             }

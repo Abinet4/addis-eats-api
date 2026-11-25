@@ -9,7 +9,7 @@ use App\Http\Responses\ApiResponse;
 use Illuminate\Http\JsonResponse;
 
 /** 409: the request is well formed but the world does not allow it right now. */
-class IllegalStatusTransitionException extends \DomainException
+class IllegalTransitionException extends \DomainException
 {
     public function __construct(
         public readonly OrderStatus $from,
@@ -20,7 +20,7 @@ class IllegalStatusTransitionException extends \DomainException
 
     public function render(): JsonResponse
     {
-        return ApiResponse::error('illegal_status_transition', $this->getMessage(), 409, [
+        return ApiResponse::error('illegal_transition', $this->getMessage(), 409, [
             'from' => $this->from->value,
             'to' => $this->to->value,
         ]);

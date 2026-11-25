@@ -1,0 +1,51 @@
+# Day 58 phone fixture: forty numbers, twenty-six valid, in five formats.
+# Format: <number> | <valid|invalid> | <why>
+# Every valid number must be stored as 0XXXXXXXXX (ten digits starting 09).
+# tests/Feature/D58PhonesTest.php posts each one as an order and checks the outcome.
+#
+# Format 1: local, ten digits
+0911234567 | valid | local
+0912345678 | valid | local
+0920000000 | valid | local
+0930123456 | valid | local
+0944556677 | valid | local
+0999999999 | valid | local
+# Format 2: international with +251
++251911234567 | valid | +251
++251922334455 | valid | +251
++251933445566 | valid | +251
++251944000111 | valid | +251
++251987654321 | valid | +251
+# Format 3: international without the plus
+251911234567 | valid | 251
+251955123456 | valid | 251
+251966000000 | valid | 251
+251977112233 | valid | 251
+251988776655 | valid | 251
+# Format 4: grouped with spaces
+0911 234 567 | valid | spaces
++251 911 234 567 | valid | spaces
++251 91 123 4567 | valid | spaces
+0922 33 44 55 | valid | spaces
+251 933 445 566 | valid | spaces
+# Format 5: dashes, brackets, dots, 00 prefix
+0911-234-567 | valid | dashes
++251-911-234-567 | valid | dashes
+(0911) 234-567 | valid | brackets
+0944.556.677 | valid | dots
+00251911234567 | valid | 00 prefix
+# Invalid: fourteen numbers that must come back 422 on "phone"
+0711234567 | invalid | Safaricom 07, not a TeleBirr (Ethio Telecom) number
+0811234567 | invalid | not a mobile prefix
+0111551234 | invalid | Addis landline
++251111551234 | invalid | landline in international form
+911234567 | invalid | missing the leading 0; normalising must not guess it
+091123456 | invalid | nine digits
+09112345678 | invalid | eleven digits
+1234567890 | invalid | ten digits, wrong prefix
+12345 | invalid | too short
+0911 234 56a | invalid | contains a letter
++1 911 234 5678 | invalid | foreign country code
++2510911234567 | invalid | +251 followed by a local 0 (eleven digits)
+0911234567ext2 | invalid | trailing extension
++251 9112345678 | invalid | ten digits after the country code

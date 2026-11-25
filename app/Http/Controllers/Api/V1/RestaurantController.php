@@ -7,6 +7,8 @@ namespace App\Http\Controllers\Api\V1;
 use App\Domain\Pricing\DeliveryZones;
 use App\Http\Controllers\Api\V1\Concerns\ListsResources;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\V1\StoreRestaurantRequest;
+use App\Http\Requests\V1\UpdateRestaurantRequest;
 use App\Http\Resources\V1\RestaurantResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\Restaurant;
@@ -14,7 +16,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Validation\Rule;
 
 class RestaurantController extends Controller
 {
@@ -52,16 +53,16 @@ class RestaurantController extends Controller
         return ApiResponse::ok(new RestaurantResource($restaurant));
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreRestaurantRequest $request): JsonResponse
     {
-        $restaurant = Restaurant::create($request->validate($this->rules(false)));
+        $restaurant = Restaurant::create($request->validated());
 
         return ApiResponse::created(new RestaurantResource($restaurant), route('v1.restaurants.show', $restaurant));
     }
 
-    public function update(Request $request, Restaurant $restaurant): JsonResponse
+    public function update(UpdateRestaurantRequest $request, Restaurant $restaurant): JsonResponse
     {
-        $restaurant->update($request->validate($this->rules($request->isMethod('patch'), $restaurant)));
+        $restaurant->update($request->validated());
 
         return ApiResponse::ok(new RestaurantResource($restaurant->refresh()));
     }
@@ -77,19 +78,5 @@ class RestaurantController extends Controller
     private function includesDishes(Request $request): bool
     {
         return in_array('dishes', explode(',', (string) $request->query('include', '')), true);
-    }
-
-    private function rules(bool $partial, ?Restaurant $current = null): array
-    {
-        $req = $partial ? 'sometimes' : 'required';
-
-        return [
-            'name' => [$req, 'string', 'max:100'],
-            'slug' => ['sometimes', 'string', 'max:120', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
-                Rule::unique('restaurants', 'slug')->ignore($current?->id)],
-            'area' => [$req, Rule::in($this->zones->names())],
-            'phone' => [$req, 'string', 'regex:/^(\+2519|09|07)\d{8}$/'],
-            'opening_hours' => ['sometimes', 'nullable', 'string', 'max:50'],
-        ];
     }
 }

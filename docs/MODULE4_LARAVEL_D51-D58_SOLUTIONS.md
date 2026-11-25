@@ -1,8 +1,8 @@
-# CodeOps Module 4, Laravel Track: Days 51 to 57 Exercise Solutions
+# CodeOps Module 4, Laravel Track: Days 51 to 58 Exercise Solutions
 
 **Project:** `addis-eats-api` (the backend capstone)
 **Stack:** PHP 8.3, Laravel 11, SQLite, Pest 3
-**Status:** every in-class exercise and every homework or capstone slice for Days 52 to 57 is implemented in this repository and covered by an automated test suite (70 tests, 233 assertions, all passing).
+**Status:** every in-class exercise and every homework or capstone slice for Days 52 to 58 is implemented in this repository and covered by an automated test suite (167 tests, 554 assertions, all passing).
 
 ---
 
@@ -16,10 +16,11 @@
 6. [Day 55: Building the First API](#day-55-building-the-first-api)
 7. [Day 56: Routing and Controllers](#day-56-routing-and-controllers)
 8. [Day 57: REST API Design](#day-57-rest-api-design)
-9. [How the work is graded](#how-the-work-is-graded)
-10. [Testing with Postman](#testing-with-postman)
-11. [Where the slides are wrong or outdated](#where-the-slides-are-wrong-or-outdated)
-12. [Verification log](#verification-log)
+9. [Day 58: Validation and Error Handling](#day-58-validation-and-error-handling)
+10. [How the work is graded](#how-the-work-is-graded)
+11. [Testing with Postman](#testing-with-postman)
+12. [Where the slides are wrong or outdated](#where-the-slides-are-wrong-or-outdated)
+13. [Verification log](#verification-log)
 
 ---
 
@@ -42,7 +43,7 @@ Run everything yourself:
 ```bash
 composer install && cp .env.example .env && php artisan key:generate
 touch database/database.sqlite && php artisan migrate --seed
-./vendor/bin/pest                       # 70 tests
+./vendor/bin/pest                       # 167 tests
 php homework/d52_menu_report.php        # Day 52 mini-project
 php homework/d53_order_engine.php       # Day 53 mini-project
 php artisan serve                       # then use requests.http
@@ -105,7 +106,7 @@ Request 1, `GET /api/v1/dishes?...`:
 HTTP/1.1 409 Conflict
 Content-Type: application/json
 
-{"error":{"code":"illegal_status_transition","message":"An order that is placed cannot become delivered.","meta":{"from":"placed","to":"delivered"}}}
+{"error":{"code":"illegal_transition","message":"An order that is placed cannot become delivered.","meta":{"from":"placed","to":"delivered"}}}
 ```
 
 Was 409 right? The body is well formed and every field is valid, so 400 and 422 are wrong: nothing about the content would make it acceptable. The request is refused because of the current state of the resource, which is exactly what 409 Conflict means. A 500 would be a lie (the server did not break) and a 200 with an error message would be the "status and body disagree" defect from slide 19.
@@ -1286,6 +1287,222 @@ When only a driver may make the transition, choose **option 2**: a dedicated sin
 
 ---
 
+## Day 58: Validation and Error Handling
+
+The day closes "the last unguarded door". Until now every write took the request at its word, so `{}` produced a 500 from a `NOT NULL` error and `{"area": "Sululta"}` created an order nobody could deliver. The goal: **no payload a client can send produces a 500**, every failure names a field or a rule, and every one arrives in the same envelope.
+
+### The four layers, and which one owns what
+
+| Layer | Example in this repository | Failure looks like |
+|---|---|---|
+| 1. Route constraint | `Route::pattern('dish', '[0-9]+')`, the slug regex for restaurants | 404 `route_not_found` (it cannot explain itself) |
+| 2. Form Request | `StoreOrderRequest`: required fields, types, ranges, `Rule::in` zones, `exists`, TeleBirr format | 422 `validation_failed`, naming every field |
+| 3. Domain rule | `OrderService`: a withdrawn dish, an illegal status change, a reused payment reference | 409 with its own code |
+| 4. Database constraint | `NOT NULL`, `UNIQUE(slug)`, `UNIQUE(payment_reference)`, foreign keys | Never meant to be hit. If it is, a 409 or a 500 with a reference, never a stack trace |
+
+### In-class exercise: guard every write
+
+| Deliverable | Where |
+|---|---|
+| `StoreDishRequest` and `UpdateDishRequest`, the same pair for restaurants | `app/Http/Requests/V1/`, plus `StoreRestaurantDishRequest` for the nested route |
+| `StoreOrderRequest`: area against config zones, TeleBirr phone, lines capped at 30, `exists` on each `dish_id` | `app/Http/Requests/V1/StoreOrderRequest.php` |
+| A `TeleBirrNumber` rule object used by orders and restaurants, with `prepareForValidation` normalising `+251` and spaces | `app/Rules/TeleBirrNumber.php`, `app/Http/Requests/V1/Concerns/NormalizesPhone.php` |
+| An `after()` check rejecting an order whose dishes come from more than one area | `StoreOrderRequest::after()` |
+| Exception handlers for validation, model-not-found, route-not-found, method-not-allowed and `Throwable` | `bootstrap/app.php` |
+| `ERRORS.md`, the code catalogue matching what the handler emits | `ERRORS.md`, guarded by a test that scans the code for every emitted code |
+| Run `bad_requests.http` (sixteen malformed payloads) against `EXPECTED.md` | `day58/bad_requests.http`, `day58/EXPECTED.md`, captured output in `day58/RESPONSES.md` |
+| `phones.txt`: forty numbers, twenty-six valid, five formats | `day58/phones.txt`, checked number by number in `tests/Feature/D58PhonesTest.php` |
+
+The slide says `bad_requests.http`, `EXPECTED.md` and `phones.txt` are provided by the course. They were not among the uploads, so this repository writes its own versions. If your instructor hands out theirs, drop them into `day58/` and run them; the rules should already pass them.
+
+**The order request**, the centre of the day:
+
+```php
+final class StoreOrderRequest extends FormRequest
+{
+    use NormalizesPhone, ZoneRules;
+
+    public const MAX_LINES = 30;
+
+    protected function prepareForValidation(): void
+    {
+        $this->normalizePhone();                      // "+251 911-234 567" -> "0911234567"
+        if (is_string($this->input('area'))) {
+            $this->merge(['area' => trim($this->input('area'))]);
+        }
+    }
+
+    public function rules(): array
+    {
+        return [
+            'customer_name'   => ['bail', 'required', 'string', 'max:120'],
+            'phone'           => ['bail', 'required', new TeleBirrNumber],
+            'area'            => ['bail', 'required', 'string', Rule::in($this->zones())],
+            'lines'           => ['bail', 'required', 'array', 'min:1', 'max:'.self::MAX_LINES],
+            'lines.*'         => ['bail', 'required', 'array:dish_id,qty'],
+            'lines.*.dish_id' => ['bail', 'required', 'integer', 'numeric', Rule::exists('dishes', 'id')],
+            'lines.*.qty'     => ['bail', 'required', 'integer', 'numeric', 'between:1,50'],
+        ];
+    }
+
+    public function after(): array
+    {
+        return [function (Validator $v) {
+            if ($v->errors()->isNotEmpty()) {
+                return;                               // no point checking areas of invalid lines
+            }
+            // one order, one area; and the 50 cap holds after duplicate lines are merged
+        }];
+    }
+}
+```
+
+Choices worth defending:
+
+- **`array:dish_id,qty` on each line.** Without it, `{"dish_id": 3, "qty": 1, "price": 1}` passes and `validated()` quietly drops the price. Refusing it is louder and better: a client that sends a price has a bug or is probing, and either way should be told. The message says so: "Each line may contain only dish_id and qty. Prices are set by the server."
+- **`integer` and `numeric` together.** Laravel's `integer` rule uses `filter_var`, which accepts `true` as 1. `numeric` rejects booleans. The same gap is why money uses a custom `Santim` rule (below).
+- **`bail`** stops at the first failure per field, so a client gets "must be an integer", not three messages for the same mistake.
+- **The `after()` hook returns early** if anything already failed, so it never queries areas for dish ids that do not exist.
+
+**The controller after the change** (no `validate()`, no `try`, no `$request->all()`):
+
+```php
+public function store(StoreOrderRequest $request): JsonResponse
+{
+    $data = $request->validated();
+
+    $order = $this->orders->place(               // OrderService, injected in the constructor
+        $data['customer_name'],
+        $data['phone'],
+        $data['area'],
+        collect($data['lines']),
+    );
+
+    return ApiResponse::created(new OrderResource($order), route('v1.orders.show', $order));
+}
+```
+
+**The handler**, in `bootstrap/app.php`, most specific first, `Throwable` last:
+
+```php
+$exceptions->render(function (ValidationException $e, Request $r) use ($isApi) {
+    if ($isApi($r)) {
+        return ApiResponse::error('validation_failed', 'The given data was invalid.', 422, $e->errors());
+    }
+});
+// ... 401, 403, 429, 404 (not_found or route_not_found), 405 with meta.allow, other HttpExceptions ...
+$exceptions->render(function (Throwable $e, Request $r) use ($isApi) {
+    if (! $isApi($r)) {
+        return null;
+    }
+    $ref = 'err_'.Str::lower(Str::random(8));
+    Log::error($e->getMessage(), ['ref' => $ref, 'exception' => $e, 'path' => $r->path()]);
+
+    return ApiResponse::error('server_error', 'Something went wrong. Quote the reference to support.', 500, ['ref' => $ref]);
+});
+```
+
+Laravel tries render callbacks in registration order and uses the first one that returns a response, so a `Throwable` callback registered first would answer every validation error with a 500. A test registers a temporary route that throws an exception whose message contains `SQLSTATE` and a table name, and asserts the response carries only an `err_xxxxxxxx` reference, with no SQL text and no `.php` path.
+
+**Proof:** the slide asks for "eight bad requests, eight 422s or 409s, no 500s". This repository runs sixteen, in three places that must agree: the Pest dataset in `tests/Feature/D58ValidationTest.php`, the Postman folder "6. Bad requests (Day 58)", and `day58/RESPONSES.md`, generated from a live `php artisan serve` (16 of 16 as expected).
+
+### Homework (capstone slice)
+
+| Requirement | Implementation |
+|---|---|
+| Every write endpoint behind a Form Request; no controller calling `$request->all()` or `->only()` | Eight controllers type-hint their request; a test greps `app/Http/Controllers` for `->all(`, `->only(`, `->validate(` and `try {` and fails if any appear |
+| `POST /orders` and `GET /orders/{order}` fully validated | `StoreOrderRequest`; `{order}` is constrained to digits and bound to the model, so `/orders/abc` is 404 `route_not_found` and `/orders/999` is 404 `not_found` |
+| `IllegalTransitionException` returning 409, thrown by the service | `app/Exceptions/IllegalTransitionException.php` (renamed from Day 57's `IllegalStatusTransitionException`; the code is now `illegal_transition`) |
+| `ERRORS.md` published in the README, every controller `try/catch` deleted | Linked from the README "Response envelope" section; no `try` left in any controller |
+| Submit sixteen request/response pairs from `bad_requests.http` | `day58/RESPONSES.md` |
+
+### Worked example: TeleBirr numbers and ETB
+
+**Phones.** TeleBirr is Ethio Telecom's wallet, so a payable number is `09` followed by eight digits. Real customers type it in many shapes, so the request normalises before validating:
+
+```php
+$p = preg_replace('/[\s\-().]/', '', $this->input('phone'));          // spaces, dashes, brackets, dots
+$p = preg_replace('/^(\+251|00251|251)(?=9\d{8}$)/', '0', $p);       // country code to a leading 0
+```
+
+The lookahead matters: the country code is replaced only when exactly `9` plus eight digits follow, so `+2510911234567` (country code plus a local 0) stays as it is and fails. `911234567` (no leading 0) also fails. Adding the missing `0` would be **correction**, not normalisation, and the slide is right that guessing about someone's money will one day guess wrong.
+
+`phones.txt` covers six local, five `+251`, five `251`, five spaced and five punctuated or `00251` numbers (26 valid), and fourteen invalid ones: Safaricom `07`, landlines in both forms, nine and eleven digits, a letter, a foreign code, an extension. Breaking the normaliser on purpose (dropping `00251`) makes the test fail, which proves the fixture is really exercised.
+
+**Money.** Prices are integer santim. `App\Rules\Santim` accepts an `int`, or a string of digits, inside a range:
+
+```php
+if (! (is_int($value) || (is_string($value) && preg_match('/^\d+$/', $value) === 1))) {
+    $fail('The :attribute must be a whole number of santim, for example 68500 for ETB 685.00.');
+    return;
+}
+```
+
+Laravel's built-in `integer` rule lets through `true`, `685.0` and `"685.0"`. Each would be stored as something nobody priced. A unit test checks all three.
+
+### Review questions
+
+**Q1. The four layers, and who catches what.** Route constraint, Form Request, domain rule, database constraint.
+- A missing `name` is a **Form Request** rule (`required`): the client must be told, by field, with a 422.
+- A nonexistent dish id is also the **Form Request** (`exists:dishes,id`): the payload refers to something that is not there, so it could never succeed as written. 422 on `lines.0.dish_id`. The database foreign key behind it is only a safety net.
+- An order to an unserved area is the **Form Request** too (`Rule::in` on the configured zones): it is a fact about the payload, not about the current state of the world. The domain's `OutsideZoneException` stays behind it as a safety net for callers that bypass HTTP (a job, a console command).
+
+**Q2. `validated()` versus `all()`.** `validated()` returns only the keys that have a rule and passed it; `all()` returns everything the client sent, including `is_admin`, `cost_price`, `status` or `total`. It is a security control because it is an allowlist enforced at the boundary: a field you forgot to think about cannot reach `create()` or `update()`, so mass assignment depends on what you validated, not on what the attacker guessed. `$fillable` is a second, weaker line. A test posts `cost_price` and `is_admin` and checks neither appears in `validated()` or the database.
+
+**Q3. `UpdateDishRequest` reusing the store rules breaks every PATCH.** It is missing `sometimes` on every field. `required` means "must be present", so a PATCH that only sends `price` fails on `name`, `restaurant_id` and `area`. The fix, in this repository: on PATCH, remove `required` and prefix `sometimes`, so a field is validated only when it is sent; on PUT keep the store rules, because PUT replaces the whole resource.
+
+```php
+return array_map(
+    fn (array $r) => ['sometimes', ...array_values(array_filter($r, fn ($rule) => $rule !== 'required'))],
+    parent::rules(),
+);
+```
+
+`array_diff` looks like the obvious tool, but it compares by string conversion and throws on rule objects such as `new Santim`, so the filter is explicit.
+
+**Q4. Rules for an order payload.**
+
+```php
+'area'            => ['bail', 'required', 'string', Rule::in(array_keys(config('addiseats.zones')))],
+'phone'           => ['bail', 'required', new TeleBirrNumber],
+'lines'           => ['bail', 'required', 'array', 'min:1', 'max:30'],
+'lines.*'         => ['bail', 'required', 'array:dish_id,qty'],
+'lines.*.dish_id' => ['bail', 'required', 'integer', 'numeric', Rule::exists('dishes', 'id')],
+'lines.*.qty'     => ['bail', 'required', 'integer', 'numeric', 'between:1,50'],
+```
+
+The `max:30` cap stops a client making the server price ten thousand lines. Errors keep the index (`lines.1.qty`), so the client can highlight the exact row.
+
+**Q5. `Rule::unique('restaurants', 'slug')` fails on every update.** On update the row being edited already holds that slug, so the rule finds it and reports a duplicate: the record clashes with itself. The fix is to ignore the current row:
+
+```php
+Rule::unique('restaurants', 'slug')->ignore($this->route('restaurant'))
+```
+
+`ignore()` accepts the bound model and uses its primary key, which matters here because restaurants are bound by slug, not id. On create the route parameter is `null` and nothing is ignored.
+
+**Q6. Mark a cancelled order as delivered.** **409 Conflict**, checked in the domain (`OrderStatus::canTransitionTo()`, called by `OrderService`), which throws `IllegalTransitionException`. It is not a validation rule because the payload is valid: `delivered` is a real status and the same body would succeed on an order that is out for delivery. The request fails only because of the order's **current state**, which a Form Request should not load and reason about. Test: "could this request ever have succeeded as written?" Yes, but not now: 409 from the service. No: 422 from a rule.
+
+### Challenge
+
+**1. The slide contradicts itself on withdrawn dishes.** One slide narrows `exists` with `->whereNull('deleted_at')`, which turns a withdrawn dish into a 422. The 422-or-409 table says a dish withdrawn after the client loaded the menu is a 409. Both cannot hold. This repository follows the table: `exists` deliberately includes soft-deleted rows, so a dish that never existed is a 422 and a withdrawn one reaches `OrderService`, which throws `DishWithdrawnException` (409 `dish_withdrawn`, `meta.dish_ids`). The client's correct reaction differs (fix the payload versus refresh the menu), which is exactly why the codes should differ.
+
+**2. Laravel's `integer` rule is too lenient for money.** It accepts `true`, `685.0` and `"685.0"`. Hence the `Santim` rule, and `numeric` next to `integer` on quantities.
+
+**3. A unique slug that is generated in the model can still give a 500.** The first version created the slug in a model event, after validation. Posting the same restaurant name twice then passed validation and hit `UNIQUE(slug)` in the database: a 500. The fix generates the slug in `prepareForValidation()` and validates it with `unique`, so the clash is a 422 on `slug`. A related trap: `Str::slug('ዮድ አቢሲኒያ')` returns an empty string for an Amharic-only name, so `slug` is required with its own message asking for a Latin slug.
+
+**4. Unparseable JSON is reported as the wrong problem.** Laravel treats a body it cannot decode as empty, so a truncated request comes back as "customer_name is required". The client is told to add a field it did send. `RejectMalformedJson` middleware answers `400 malformed_json` instead, and leaves empty bodies alone (a `DELETE` with a JSON content type and no body still gets its 204, and a test proves it).
+
+**5. Two lines of the same dish bypassed the quantity cap.** The service merges `[{3, 30}, {3, 30}]` into one line of 60, beyond the 1 to 50 cap that each line passed. The `after()` hook now checks the merged quantity. Found by asking what the service does with the validated data, not only what the rules accept.
+
+**6. TeleBirr only, for restaurants too?** The slide uses one `TeleBirrNumber` rule for orders and restaurants, and this repository follows it. It is worth challenging: a restaurant's contact number is often a landline (`011...`) and some customers use Safaricom (`07...`). TeleBirr is right for a number you will charge; for a number you only call, a broader `EthiopianPhone` rule would be kinder. Keep TeleBirr where money moves, and decide the contact field with the product owner.
+
+**7. RFC 9457 instead of a home-made envelope.** The resources slide points at Problem Details (`application/problem+json` with `type`, `title`, `status`, `detail`). Our envelope carries the same information and has been the contract since Day 56, so switching now would break clients. For a new public API, start with RFC 9457.
+
+**8. `APP_DEBUG`.** `.env.example` ships `APP_DEBUG=true` for local work. The `Throwable` handler hides details regardless, but production must still set `APP_DEBUG=false` and `APP_ENV=production`, because other paths (non-API web errors, Ignition) read it.
+
+---
+
 ## How the work is graded
 
 The evaluation sheet has eight columns. This is what each one checks, where it lives in this repository, and how to demonstrate it.
@@ -1299,21 +1516,21 @@ The evaluation sheet has eight columns. This is what each one checks, where it l
 | **Controller** | Thin controllers in `Api\V1`; five-method resource controllers; `__invoke` for non-CRUD actions; constructor injection, never `new Service()` | Dish, Restaurant, RestaurantDish, Order controllers; OrderStatus, OrderCancellation, OrderPayment, Menu, Quote single-action controllers; rules in `OrderService` and `MenuService` | A test fails if any controller writes `new ...Service` or `new ...Rule` |
 | **RestAPI + Filtering** | Nouns not verbs; correct codes 200, 201 with `Location`, 204, 404, 405, 409, 422; filtering, search, sorting through a whitelist; pagination with a cap and filters kept in links | `ListsResources` trait (`perPage()`, `sort()`), Dish scopes `inArea`, `under`, `fasting`, `search`; `withQueryString()`; cursor pagination on orders | `/api/v1/dishes?area=Bole&sort=-price&per_page=2&page=2` and read `links.next`; `?per_page=1000000` returns 100 |
 | **Resources** | API Resource classes instead of raw models; internal fields hidden; `whenLoaded` and `whenCounted`; `data` wrapper; one success and error envelope | `app/Http/Resources/V1/*`; `ApiResponse`; error rendering in `bootstrap/app.php` | A test asserts the exact DishResource field list and that `cost_price` never appears |
-| **Request Handling** | Typed input (`integer()`, `boolean()`, `string()`, `filled()`, `enum()`, `collect()`); never `$request->all()` into `create()`; invalid input gives 422 not 500; one error shape | Every controller; `$request->validate()` on each write; `validation_failed`, `not_found`, `method_not_allowed` envelopes | Send `{"price": "two"}` or an order with `qty: 0` and get a 422 `validation_failed` |
+| **Request Handling** | Form Requests on every write; `validated()`, never `all()` or `only()`; typed query input (`integer()`, `boolean()`, `string()`, `filled()`); invalid input gives 422 not 500; one error shape from one handler | `app/Http/Requests/V1/*`, `app/Rules/*`, the handler in `bootstrap/app.php`, `ERRORS.md`; query input in `ListsResources` | Run `day58/bad_requests.http`: sixteen bad payloads, sixteen 4xx in one envelope, no 500 |
 
-Two likely questions per column are already answered in the Review Questions of the matching day. The one gap an evaluator could raise is **Form Request classes** (`php artisan make:request`), which the course formally teaches on Day 58. The validation rules already exist in the controllers, so moving them into Form Requests is a short, mechanical change.
+Two likely questions per column are already answered in the Review Questions of the matching day. The earlier gap in Request Handling (no Form Request classes) was closed on Day 58: every write endpoint now has one, and a test fails if a controller calls `all()`, `only()`, `validate()` or contains a `try`.
 
 ## Testing with Postman
 
-The repository includes `addis-eats-api.postman_collection.json`: 40 requests in five folders (Day 52 basics, Menu, Dishes, Restaurants, Orders) with 55 automatic assertions on status codes, error codes, the `Location` header, the hidden `cost_price` field and pagination links.
+The repository includes `addis-eats-api.postman_collection.json`: 56 requests in six folders (Day 52 basics, Menu, Dishes, Restaurants, Orders, Bad requests for Day 58) with 98 automatic assertions on status codes, error codes, the `Location` header, the hidden `cost_price` field and pagination links.
 
 1. Start the API: `php artisan migrate:fresh --seed` then `php artisan serve`.
 2. In Postman choose **Import**, then select the collection file.
 3. The collection variable `baseUrl` is `http://127.0.0.1:8000`. Change it if you serve on another port.
-4. Click a request and **Send**, or right-click the collection, choose **Run collection**, and run all 40 in order. Requests pass ids to each other through collection variables (`dishId`, `orderId`, `restaurantSlug`, `payRef`), so run them in order.
+4. Click a request and **Send**, or right-click the collection, choose **Run collection**, and run all 56 in order. Requests pass ids to each other through collection variables (`dishId`, `orderId`, `restaurantSlug`, `payRef`), so run them in order.
 5. Command line alternative, the same tool Day 69 uses: `npx newman run addis-eats-api.postman_collection.json`.
 
-Verified: three consecutive runs against the same database, 40 requests and 55 assertions, 0 failures.
+Verified: two consecutive runs against the same freshly seeded database, 56 requests and 98 assertions, 0 failures. The truncated JSON request in folder 6 is sent byte for byte, so expect Postman to underline it as invalid JSON; that is the point of the test.
 
 ---
 
@@ -1336,7 +1553,10 @@ Each item was confirmed by running code on Laravel 11.57.1 / PHP 8.3.6.
 | 56 | `/restaurants/1/dishes` as a proof | 404 once binding is on slug | Use the slug |
 | 56 | Closures cannot be route-cached | `route:cache` works on Laravel 11 | Closures kept only for trivial Day 52 routes |
 | 57 | `min($request->integer('per_page', 15) ?: 15, 100)` | `-5` reaches `paginate()` | Lower bound of 1 |
-| 55 | Validation waits for Day 58 | Bad input becomes a 500 meanwhile | Minimal `validate()` now |
+| 55 | Validation waits for Day 58 | Bad input becomes a 500 meanwhile | Minimal `validate()` on Day 55, moved into Form Requests on Day 58 |
+| 58 | `exists` narrowed with `whereNull('deleted_at')` | Makes a withdrawn dish a 422, contradicting the slide's own 422 or 409 table (409) | `exists` includes trashed rows; the service answers 409 `dish_withdrawn` |
+| 58 | `integer` is enough for prices and quantities | Accepts `true`, `685.0` and `"685.0"` | `Santim` rule for money, `integer` plus `numeric` for quantities |
+| 58 | Invalid JSON is a validation problem | Laravel reads it as an empty body and answers "field is required" | `400 malformed_json` from middleware |
 | all | Laravel 11 | `composer audit` lists unpatched advisories on 11.x | Upgrade the major before any real deployment |
 
 ---
@@ -1346,7 +1566,7 @@ Each item was confirmed by running code on Laravel 11.57.1 / PHP 8.3.6.
 **Test suite** (`./vendor/bin/pest`):
 
 ```text
-Tests:    70 passed (233 assertions)
+Tests:    167 passed (554 assertions)
 ```
 
 | Test file | Covers |
@@ -1357,8 +1577,13 @@ Tests:    70 passed (233 assertions)
 | `tests/Feature/D55DishesTest.php` | Filters, blank and zero filters, 404 variants, exact resource fields, 201 plus `Location`, mass-assignment protection, 422 instead of 500, PATCH versus PUT, 204 and soft delete, 405 |
 | `tests/Feature/D56RestaurantsTest.php` | Slug binding with hyphens, nested list sorting, whitelist fallback and injection attempt, case-insensitive search with literal `%`, `include`, query counts 2 and 3, nested create, restaurant CRUD |
 | `tests/Feature/D57DesignTest.php` | `per_page` sanitising, filters in links, page past the end, cursor paging with no repeats, order totals and merged lines, five bad-order cases, status transitions and 409, cancellation, idempotent payment |
+| `tests/Unit/D58RulesTest.php` | `TeleBirrNumber` and `Santim` accept and reject lists, including `true`, `685.0` and non-strings |
+| `tests/Feature/D58ValidationTest.php` | The sixteen bad requests, status and payment validation, phone normalisation, withdrawn dish 409, `validated()` dropping `cost_price` and `is_admin`, PATCH versus PUT, `unique` ignoring the current row, Amharic names, the hidden `server_error`, the 50 cap across split lines, empty JSON bodies, order 404s, `ERRORS.md` listing every emitted code, no `all()`/`only()`/`validate()`/`try` in controllers |
+| `tests/Feature/D58PhonesTest.php` | All forty numbers in `day58/phones.txt`, twenty-six accepted and stored as `09XXXXXXXX`, fourteen rejected on `phone` |
 
-**Postman / Newman:** 40 requests, 55 assertions, 0 failures, three consecutive runs.
+**Postman / Newman:** 56 requests, 98 assertions, 0 failures, two consecutive runs.
+
+**Bad requests against a live server:** `day58/RESPONSES.md`, generated from `php artisan serve` on a freshly seeded database: 16 of 16 as expected, no 500.
 
 **Route table** (`php artisan route:list --path=api`): 22 routes, listed in the README endpoint table.
 

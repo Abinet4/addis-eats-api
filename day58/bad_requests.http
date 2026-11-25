@@ -1,0 +1,116 @@
+# Day 58: sixteen deliberately malformed requests. Run against a freshly seeded database:
+#   php artisan migrate:fresh --seed && php artisan serve
+# Expected results are in day58/EXPECTED.md, captured responses in day58/RESPONSES.md.
+
+### 01 Empty dish body (expect 422 validation_failed)
+POST http://127.0.0.1:8000/api/v1/dishes
+Content-Type: application/json
+Accept: application/json
+
+{}
+
+### 02 Negative price (expect 422 validation_failed)
+POST http://127.0.0.1:8000/api/v1/dishes
+Content-Type: application/json
+Accept: application/json
+
+{"name": "Test Dish", "restaurant_id": 1, "price": -500, "area": "Bole"}
+
+### 03 Price as decimal ETB (expect 422 validation_failed)
+POST http://127.0.0.1:8000/api/v1/dishes
+Content-Type: application/json
+Accept: application/json
+
+{"name": "Test Dish", "restaurant_id": 1, "price": 685.5, "area": "Bole"}
+
+### 04 Price as boolean (expect 422 validation_failed)
+POST http://127.0.0.1:8000/api/v1/dishes
+Content-Type: application/json
+Accept: application/json
+
+{"name": "Test Dish", "restaurant_id": 1, "price": true, "area": "Bole"}
+
+### 05 Unknown restaurant (expect 422 validation_failed)
+POST http://127.0.0.1:8000/api/v1/dishes
+Content-Type: application/json
+Accept: application/json
+
+{"name": "Test Dish", "restaurant_id": 999, "price": 18000, "area": "Bole"}
+
+### 06 Unserved area (expect 422 validation_failed)
+POST http://127.0.0.1:8000/api/v1/orders
+Content-Type: application/json
+Accept: application/json
+
+{"customer_name": "Almaz", "phone": "0911234567", "area": "Sululta", "lines": [{"dish_id": 3, "qty": 1}]}
+
+### 07 Short phone (expect 422 validation_failed)
+POST http://127.0.0.1:8000/api/v1/orders
+Content-Type: application/json
+Accept: application/json
+
+{"customer_name": "Almaz", "phone": "12345", "area": "Bole", "lines": [{"dish_id": 3, "qty": 1}]}
+
+### 08 No lines (expect 422 validation_failed)
+POST http://127.0.0.1:8000/api/v1/orders
+Content-Type: application/json
+Accept: application/json
+
+{"customer_name": "Almaz", "phone": "0911234567", "area": "Bole", "lines": []}
+
+### 09 Too many lines (31) (expect 422 validation_failed)
+POST http://127.0.0.1:8000/api/v1/orders
+Content-Type: application/json
+Accept: application/json
+
+{"customer_name": "Almaz", "phone": "0911234567", "area": "Bole", "lines": [{"dish_id": 3, "qty": 1}, {"dish_id": 3, "qty": 1}, {"dish_id": 3, "qty": 1}, {"dish_id": 3, "qty": 1}, {"dish_id": 3, "qty": 1}, {"dish_id": 3, "qty": 1}, {"dish_id": 3, "qty": 1}, {"dish_id": 3, "qty": 1}, {"dish_id": 3, "qty": 1}, {"dish_id": 3, "qty": 1}, {"dish_id": 3, "qty": 1}, {"dish_id": 3, "qty": 1}, {"dish_id": 3, "qty": 1}, {"dish_id": 3, "qty": 1}, {"dish_id": 3, "qty": 1}, {"dish_id": 3, "qty": 1}, {"dish_id": 3, "qty": 1}, {"dish_id": 3, "qty": 1}, {"dish_id": 3, "qty": 1}, {"dish_id": 3, "qty": 1}, {"dish_id": 3, "qty": 1}, {"dish_id": 3, "qty": 1}, {"dish_id": 3, "qty": 1}, {"dish_id": 3, "qty": 1}, {"dish_id": 3, "qty": 1}, {"dish_id": 3, "qty": 1}, {"dish_id": 3, "qty": 1}, {"dish_id": 3, "qty": 1}, {"dish_id": 3, "qty": 1}, {"dish_id": 3, "qty": 1}, {"dish_id": 3, "qty": 1}]}
+
+### 10 Quantity out of range on line 2 (expect 422 validation_failed)
+POST http://127.0.0.1:8000/api/v1/orders
+Content-Type: application/json
+Accept: application/json
+
+{"customer_name": "Almaz", "phone": "0911234567", "area": "Bole", "lines": [{"dish_id": 3, "qty": 1}, {"dish_id": 6, "qty": 51}]}
+
+### 11 Dish that never existed (expect 422 validation_failed)
+POST http://127.0.0.1:8000/api/v1/orders
+Content-Type: application/json
+Accept: application/json
+
+{"customer_name": "Almaz", "phone": "0911234567", "area": "Bole", "lines": [{"dish_id": 99999, "qty": 1}]}
+
+### 12 Dishes from two areas (expect 422 validation_failed)
+POST http://127.0.0.1:8000/api/v1/orders
+Content-Type: application/json
+Accept: application/json
+
+{"customer_name": "Almaz", "phone": "0911234567", "area": "Bole", "lines": [{"dish_id": 3, "qty": 1}, {"dish_id": 2, "qty": 1}]}
+
+### 13 Client tries to set the price (expect 422 validation_failed)
+POST http://127.0.0.1:8000/api/v1/orders
+Content-Type: application/json
+Accept: application/json
+
+{"customer_name": "Almaz", "phone": "0911234567", "area": "Bole", "lines": [{"dish_id": 3, "qty": 1, "price": 1}]}
+
+### 14 Truncated JSON body (expect 400 malformed_json)
+POST http://127.0.0.1:8000/api/v1/orders
+Content-Type: application/json
+Accept: application/json
+
+{"customer_name": "Almaz", "lines": [
+
+### 15 PATCH price as text (expect 422 validation_failed)
+PATCH http://127.0.0.1:8000/api/v1/dishes/1
+Content-Type: application/json
+Accept: application/json
+
+{"price": "two hundred"}
+
+### 16 Restaurant with a landline phone (expect 422 validation_failed)
+POST http://127.0.0.1:8000/api/v1/restaurants
+Content-Type: application/json
+Accept: application/json
+
+{"name": "Totot", "area": "Megenagna", "phone": "0111234567"}
+

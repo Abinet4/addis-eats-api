@@ -55,7 +55,7 @@ it('rejects bad input with 422, never 500', function () {
     $this->postJson('/api/v1/dishes', ['name' => 'X', 'price' => -5, 'area' => 'Sululta'])
         ->assertStatus(422)
         ->assertJsonPath('error.code', 'validation_failed')
-        ->assertJsonStructure(['error' => ['meta' => ['fields' => ['price', 'area', 'restaurant_id', 'is_fasting']]]]);
+        ->assertJsonStructure(['error' => ['meta' => ['price', 'area', 'restaurant_id']]]);
     $this->postJson('/api/v1/dishes', ['price' => 'two'])->assertStatus(422);
 });
 
